@@ -22,6 +22,7 @@ local function initCharDB()
       db = {}
       DecadesSyncDB[name] = db
     end
+    mod.db = db
     for k, v in pairs(mod.defaults) do
       if db[k] == nil then db[k] = v end
     end
