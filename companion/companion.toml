@@ -1,0 +1,11 @@
+# Decades Sync companion configuration.
+# wow_root: explicit WoW install dir; empty = auto-discover
+# (a dir containing WTF/Account/*/SavedVariables/DecadesSync.lua).
+wow_root = ""
+
+# Seconds between SavedVariables polls in --loop mode.
+poll_seconds = 2.0
+
+# Hub ingest endpoint; empty = offline stub (upload is skipped with a log
+# line). Setting any value raises NotImplementedError until Plan B wires it.
+ingest_url = ""
