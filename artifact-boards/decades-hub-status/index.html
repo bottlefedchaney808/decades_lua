@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decades Hub — Build Status</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 13px/1.45 ui-sans-serif, system-ui, sans-serif; color: var(--foreground, #e7e7e7); }
+  h1 { font-size: 17px; margin: 0 0 2px; letter-spacing: .01em; }
+  .sub { color: var(--muted-foreground, #8b8b8b); margin-bottom: 14px; font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip { border: 1px solid var(--border, #333); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px; color: var(--muted-foreground, #8b8b8b); background: transparent; }
+  .chip.on { color: var(--accent, #e0b055); border-color: var(--accent, #e0b055); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .card { border: 1px solid var(--border, #333); border-radius: 10px; padding: 12px 14px; background: var(--card, #171717); }
+  .card h2 { margin: 0 0 2px; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card .meta { color: var(--muted-foreground, #8b8b8b); font-size: 11.5px; margin-bottom: 8px; }
+  .pill { font-size: 10.5px; border-radius: 999px; padding: 1px 8px; border: 1px solid; white-space: nowrap; }
+  .s-done { color: #58c47a; border-color: #58c47a66; }
+  .s-run  { color: var(--accent, #e0b055); border-color: var(--accent, #e0b055); animation: pulse 1.6s infinite; }
+  .s-next { color: #7f8fa6; border-color: #7f8fa655; }
+  .s-block{ color: #d47f7f; border-color: #d47f7f55; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  ul { margin: 6px 0 0; padding-left: 16px; }
+  li { margin: 2px 0; }
+  .num { color: var(--accent, #e0b055); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar { height: 5px; border-radius: 3px; background: var(--border, #333); overflow: hidden; margin-top: 8px; }
+  .bar > i { display: block; height: 100%; background: var(--accent, #e0b055); }
+  footer { margin-top: 14px; color: var(--muted-foreground, #8b8b8b); font-size: 11px; }
+</style>
+</head>
+<body>
+<h1>Decades Guild Hub — Build Status</h1>
+<div class="sub">live build telemetry · branch <b>Sync-appware-lora</b> · PM: Hermes</div>
+
+<div class="chips" id="chips"></div>
+<div class="grid" id="grid"></div>
+
+<footer id="foot"></footer>
+
+<script>
+(function () {
+  "use strict";
+  // Streamed build telemetry (updated each gate pass)
+  var DATA = {
+    generatedAt: "2026-09-28T01:15:00",
+    totals: { commits: 11, tests: 28, testSuite: "green", phasesShipped: 1, wavesRun: 3 },
+    phases: [
+      { id: "A", name: "Addon + Companion Pipe", status: "run", gate: "wave 3 in flight — main.py + e2e + README, then PM tags v0.1.0",
+        stats: [["Lua modules", "core · pos · inventory · data"], ["Companion", "svparse · watch · store · emitter"], ["Commits", "11"], ["Tests", "28 green"], ["PM fixes", "array grammar both directions"]],
+        progress: 78 },
+      { id: "B", name: "Firebase Backend (decades-prod)", status: "block", gate: "blocked on decades_app access + Blaze budget answers",
+        stats: [["Planned", "ingest · addonData · Firestore rules"], ["Depends on", "GM answers"]],
+        progress: 0 },
+      { id: "C", name: "Signups + Raid Builder", status: "next", gate: "replaces the SoD Google sheet",
+        stats: [["Week grid", "day toggles · lockouts"], ["Officer view", "drag comps, save raids"], ["Needs", "Phase B auth"]],
+        progress: 0 },
+      { id: "D", name: "WCL / Performance", status: "block", gate: "WCL Forever support unconfirmed; fallback = own combat-log parser",
+        stats: [["Pulls", "rankings · report events"], ["Extracts", "uptime · cds · idle GCD"]],
+        progress: 0 },
+      { id: "E", name: "Loot Ledger", status: "next", gate: "own CHAT_MSG_LOOT capture + RCLootCouncil adapter",
+        stats: [["Search", "by item · by player"], ["Links", "priority · 'who's next'"]],
+        progress: 0 },
+      { id: "F", name: "Min-Max Suite", status: "next", gate: "SimProvider over forever_sim + WoW4_SiMs",
+        stats: [["Four numbers", "BiS · Ceiling · Expected · Actual"], ["Critique", "ranked by measured +DPS"], ["Mentor", "timeline vs top parser"]],
+        progress: 0 },
+      { id: "G", name: "Go-There Directions", status: "next", gate: "map deep links · routes · /dec go · Discord /where",
+        stats: [["Resolver", "own → bank → crafter → world"], ["Map", "17,637 nodes loaded"]],
+        progress: 0 },
+      { id: "H", name: "Public Face", status: "next", gate: "guild page · member cards · accolades down-sync",
+        stats: [["Recruiting", "the raid-sheet successor"], ["Opt-out", "per member, honored"]],
+        progress: 0 }
+    ]
+  };
+
+  var LABEL = { done: "SHIPPED", run: "IN FLIGHT", next: "QUEUED", block: "BLOCKED" };
+  var chips = ["all", "in flight", "queued", "blocked"];
+  var active = "all";
+  var chipsEl = document.getElementById("chips");
+  var gridEl = document.getElementById("grid");
+
+  function counts() {
+    var c = { all: DATA.phases.length, "in flight": 0, queued: 0, blocked: 0 };
+    DATA.phases.forEach(function (p) { if (p.status === "run") c["in flight"]++; else if (p.status === "block") c.blocked++; else c.queued++; });
+    return c;
+  }
+
+  function renderChips() {
+    var c = counts();
+    chipsEl.innerHTML = "";
+    chips.forEach(function (name) {
+      var b = document.createElement("button");
+      b.className = "chip" + (active === name ? " on" : "");
+      b.textContent = name + " · " + c[name];
+      b.addEventListener("click", function () { active = name; render(); });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  function renderGrid() {
+    gridEl.innerHTML = "";
+    DATA.phases.forEach(function (p) {
+      if (active !== "all") {
+        var want = active === "in flight" ? "run" : active === "blocked" ? "block" : "next";
+        if (p.status !== want) return;
+      }
+      var card = document.createElement("div");
+      card.className = "card";
+      var lis = p.stats.map(function (s) { return "<li><b>" + s[0] + ":</b> " + s[1] + "</li>"; }).join("");
+      card.innerHTML =
+        "<h2><span>" + p.id + " · " + p.name + "</span>" +
+        "<span class='pill s-" + p.status + "'>" + LABEL[p.status] + "</span></h2>" +
+        "<div class='meta'>" + p.gate + "</div><ul>" + lis + "</ul>" +
+        "<div class='bar'><i style='width:" + p.progress + "%'></i></div>";
+      gridEl.appendChild(card);
+    });
+  }
+
+  function render() { renderChips(); renderGrid(); }
+  render();
+  document.getElementById("foot").textContent =
+    "Totals — commits " + DATA.totals.commits + " · tests " + DATA.totals.tests + " (" + DATA.totals.testSuite +
+    ") · waves gated " + DATA.totals.wavesRun + " · data as of " + DATA.generatedAt;
+})();
+</script>
+</body>
+</html>
