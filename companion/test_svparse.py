@@ -15,5 +15,15 @@ class TestParseSV(unittest.TestCase):
     def test_escaped_string(self):
         self.assertEqual(parse_sv(r'DecadesSyncDB = { ["n"] = "a\"b\\c", }'), {"n": 'a"b\\c'})
 
+    def test_positional_array_becomes_list(self):
+        text = 'DecadesSyncDB = {\n\t["roster"] = {\n\t\t{\n\t\t\t["name"] = "Grukk",\n\t\t},\n\t\t{\n\t\t\t["name"] = "Ulu",\n\t\t},\n\t},\n}\n'
+        self.assertEqual(parse_sv(text), {"roster": [{"name": "Grukk"}, {"name": "Ulu"}]})
+    def test_mixed_table_stays_dict(self):
+        # 1..n sequential integer keys -> list; anything else stays a dict with string keys
+        self.assertEqual(parse_sv('DecadesSyncDB = { [1]="a", [2]="b", }'), ["a", "b"])
+        self.assertEqual(parse_sv('DecadesSyncDB = { [1]="a", ["x"]="b", }'), {"1": "a", "x": "b"})
+    def test_scalar_array(self):
+        self.assertEqual(parse_sv('DecadesSyncDB = { 1, 2, 3, }'), [1, 2, 3])
+
 if __name__ == "__main__":
     unittest.main()

@@ -63,6 +63,13 @@ def _encode(value, depth: int) -> str:
                 raise TypeError(f"table keys must be str, got {type(key).__name__}")
             lines.append(f'{inner}["{_escape(key)}"] = {_encode(value[key], depth + 1)},')
         return "{\n" + "\n".join(lines) + f"\n{indent}}}"
+    if isinstance(value, list):
+        indent = "\t" * depth
+        inner = "\t" * (depth + 1)
+        if not value:
+            return "{}"
+        lines = [f"{inner}{_encode(item, depth + 1)}," for item in value]
+        return "{\n" + "\n".join(lines) + f"\n{indent}}}"
     raise TypeError(f"unsupported value type: {type(value).__name__}")
 
 

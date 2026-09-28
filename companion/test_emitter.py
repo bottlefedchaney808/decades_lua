@@ -57,5 +57,12 @@ class TestEmitDataLua(unittest.TestCase):
             self.assertFalse(out.exists())
 
 
+    def test_list_round_trip(self):
+        data = {"generatedAt": "t", "roster": [{"name": "Grukk"}, {"name": "Ulu"}], "nums": [1, 2, 3]}
+        out = self.tmp / "Data" / "DecadesData.lua"
+        emit_data_lua(data, out)
+        body = "\n".join(l for l in out.read_text().splitlines() if not l.startswith("--"))
+        self.assertEqual(parse_sv(body), data)
+
 if __name__ == "__main__":
     unittest.main()

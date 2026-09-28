@@ -5,7 +5,9 @@ Grammar (anything outside it raises SVParseError):
     file    := IDENT '=' table
     table   := '{' [entry {',' entry} [',']] '}'
     entry   := '[' STRING ']' '=' value
+             | '[' NUMBER ']' '=' value
              | IDENT '=' value
+             | value                      -- positional; auto-indexed 1..n
     value   := STRING | NUMBER | 'true' | 'false' | 'nil' | table
 
 Strings support exactly the escapes \" \\ \n. Numbers become int when
@@ -53,6 +55,21 @@ def _decode_string(raw: str, pos: int) -> str:
             out.append(ch)
             i += 1
     return "".join(out)
+
+
+def _maybe_list(table: dict):
+    """Convert a table whose keys are exactly the integers 1..n to a list.
+
+    WoW's SV writer emits arrays as positional entries (or explicit [1]=..[n]=);
+    round-tripping them as dicts would break every consumer. Anything else --
+    mixed, sparse, non-sequential -- stays a dict with string keys.
+    """
+    if not table:
+        return table
+    n = len(table)
+    if all(k.isdigit() and 1 <= int(k) <= n for k in table) and len({int(k) for k in table}) == n:
+        return [table[str(i)] for i in range(1, n + 1)]
+    return table
 
 
 Token = tuple  # (kind, value, offset)
@@ -103,21 +120,24 @@ class _Parser:
             raise SVParseError(f"trailing input at offset {pos}: {tok_value!r}")
         return result
 
-    def parse_table(self) -> dict:
+    def parse_table(self):
         self._next(value="{")
         table = {}
+        auto = 0  # positional-entry auto index (1-based, Lua semantics)
         while True:
             kind, value, pos = self._peek()
             if kind == "punct" and value == "}":
                 self.i += 1
-                return table
-            self.parse_entry(table)
+                break
+            auto += 1
+            self.parse_entry(table, auto)
             kind, value, pos = self._next()
             if kind == "punct" and value == ",":
                 continue
             if kind == "punct" and value == "}":
-                return table
+                break
             raise SVParseError(f"expected ',' or '}}' at offset {pos}, got {value!r}")
+        return _maybe_list(table)
     def parse_entry(self, table: dict) -> None:
         kind, value, pos = self._peek()
         if kind == "punct" and value == "[":
@@ -150,7 +170,7 @@ class _Parser:
         raise SVParseError(f"expected a value at offset {pos}, got {value!r}")
 
 
-def parse_sv(text: str) -> dict:
+def parse_sv(text: str) -> dict | list:
     """Parse SavedVariables Lua text ('Name = { ... }') into a dict.
 
     Raises SVParseError for any construct outside the supported grammar.
