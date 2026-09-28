@@ -4,6 +4,8 @@
 ## Author: Decades
 ## Version: 0.1.0
 ## SavedVariablesPerCharacter: DecadesSyncDB
+Data/DecadesData.lua
 core.lua
 pos.lua
 inventory.lua
+data.lua
