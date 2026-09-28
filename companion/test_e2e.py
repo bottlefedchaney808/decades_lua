@@ -29,7 +29,7 @@ def strip_comments(text: str) -> str:
 def make_fake_wow(tmp: Path) -> tuple[Path, Path, Path]:
     """Seed a fake WoW install from the fixture; return (config, store, data_lua)."""
     wow = tmp / "WoW"
-    sv = wow / "WTF" / "Account" / "ACCOUNT" / "SavedVariables" / "DecadesSync.lua"
+    sv = wow / "WTF" / "Account" / "ACCOUNT" / "Decades" / "Grukk" / "SavedVariables" / "DecadesSync.lua"
     sv.parent.mkdir(parents=True)
     shutil.copyfile(FIXTURE, sv)
     (wow / "Interface" / "AddOns" / "DecadesSync" / "Data").mkdir(parents=True)

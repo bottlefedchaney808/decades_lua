@@ -35,12 +35,11 @@ from pathlib import Path
 from companion.emitter import emit_data_lua
 from companion.store import Store
 from companion.svparse import SVParseError, parse_sv
-from companion.watch import Watcher, find_wow
+from companion.watch import Watcher, find_wow, iter_sv
 
 __all__ = ["run", "main", "char_key"]
 
 ADDON_DATA_RELPATH = Path("Interface") / "AddOns" / "DecadesSync" / "Data" / "DecadesData.lua"
-SV_GLOB = str(Path("WTF") / "Account" / "*" / "SavedVariables" / "DecadesSync.lua")
 
 # Watchers keyed by resolved SV path: mtime memory must survive across
 # separate run() calls in the same process (a fresh Watcher would treat
@@ -71,9 +70,9 @@ def load_config(config_path: str | Path) -> dict:
 def _cycle(cfg: dict, store_dir: Path, wow: Path | None = None) -> str | None:
     """Run one watcher poll; store + emit on change. Returns char key or None."""
     wow = wow or find_wow(cfg["wow_root"] or None)
-    matches = sorted(wow.glob(SV_GLOB))
-    if not matches:  # pragma: no cover - find_wow already proved it exists
-        raise FileNotFoundError(f"No {SV_GLOB} under {wow}")
+    matches = sorted(iter_sv(wow))
+    if not matches:
+        raise FileNotFoundError(f"No DecadesSync.lua SavedVariables under {wow}")
 
     synced = None
     for sv_path in matches:  # every account gets a chance (CARL R1-F10)
@@ -98,8 +97,7 @@ def _cycle(cfg: dict, store_dir: Path, wow: Path | None = None) -> str | None:
         Store(store_dir).append(key, sv)
         _upload(cfg, key)
         generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        # <wow> sits 4 levels above the SV file: SavedVariables/<account>/Account/WTF
-        data_lua = sv_path.parents[4] / ADDON_DATA_RELPATH
+        data_lua = wow / ADDON_DATA_RELPATH
         _emit_with_retry({"generatedAt": generated_at, "roster": []}, data_lua)
         print(f"synced {key} -> {data_lua}")
         synced = key

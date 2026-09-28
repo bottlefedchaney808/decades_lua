@@ -10,8 +10,21 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-SV_RELPATH = Path("WTF") / "Account" / "*" / "SavedVariables" / "DecadesSync.lua"
+SV_GLOBS = (
+    "WTF/Account/*/*/*/SavedVariables/DecadesSync.lua",  # SavedVariablesPerCharacter
+    "WTF/Account/*/SavedVariables/DecadesSync.lua",      # leftover account-wide
+)
 MAX_DEPTH = 4
+
+
+def iter_sv(wow_dir: Path):
+    """Yield DecadesSync.lua paths under a WoW root (per-char first)."""
+    seen: set[Path] = set()
+    for pattern in SV_GLOBS:
+        for p in wow_dir.glob(pattern):
+            if p not in seen:
+                seen.add(p)
+                yield p
 
 
 def _default_candidates() -> list[str]:
@@ -26,7 +39,7 @@ def _default_candidates() -> list[str]:
 
 def _has_sv(wow_dir: Path) -> bool:
     try:
-        next(wow_dir.glob(str(SV_RELPATH)))
+        next(iter_sv(wow_dir))
     except (StopIteration, OSError, PermissionError):
         return False
     return True
@@ -64,7 +77,7 @@ def find_wow(root: str | None, candidates: list[str] | None = None) -> Path:
         if found is not None:
             return found
     raise FileNotFoundError(
-        "No WoW install with WTF/Account/*/SavedVariables/DecadesSync.lua found"
+        "No WoW install with WTF/Account/<acc>/<realm>/<char>/SavedVariables/DecadesSync.lua found"
     )
 
 

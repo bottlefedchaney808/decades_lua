@@ -29,7 +29,7 @@ class FakeWow:
 
     def __init__(self, tmp: Path, ingest_url: str = "") -> None:
         self.root = tmp / "WoW"
-        sv_dir = self.root / "WTF" / "Account" / "ACC" / "SavedVariables"
+        sv_dir = self.root / "WTF" / "Account" / "ACC" / "Decades" / "Grukk" / "SavedVariables"
         sv_dir.mkdir(parents=True)
         self.sv = sv_dir / "DecadesSync.lua"
         self.sv.write_text(SV_TEXT, encoding="utf-8")

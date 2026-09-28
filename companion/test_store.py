@@ -10,8 +10,11 @@ from companion.watch import Watcher, find_wow
 
 
 def make_sv(wow_root: Path, account: str = "ACC1") -> Path:
-    """Create <wow_root>/WTF/Account/<account>/SavedVariables/DecadesSync.lua."""
-    sv = wow_root / "WTF" / "Account" / account / "SavedVariables" / "DecadesSync.lua"
+    """Create per-character SavedVariables (matches SavedVariablesPerCharacter)."""
+    sv = (
+        wow_root / "WTF" / "Account" / account / "Realm" / "Char"
+        / "SavedVariables" / "DecadesSync.lua"
+    )
     sv.parent.mkdir(parents=True, exist_ok=True)
     sv.write_text("DecadesSyncDB = {\n}\n", encoding="utf-8")
     return sv
