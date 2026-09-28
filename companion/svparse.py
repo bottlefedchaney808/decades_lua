@@ -138,20 +138,25 @@ class _Parser:
                 break
             raise SVParseError(f"expected ',' or '}}' at offset {pos}, got {value!r}")
         return _maybe_list(table)
-    def parse_entry(self, table: dict) -> None:
+    def parse_entry(self, table: dict, auto: int) -> None:
         kind, value, pos = self._peek()
         if kind == "punct" and value == "[":
             self.i += 1
-            _, raw, spos = self._next("string")
+            nxt_kind, raw, spos = self._next()
             self._next(value="]")
             self._next(value="=")
-            key = _decode_string(raw, spos)
-        elif kind == "ident":
+            if nxt_kind == "string":
+                key = _decode_string(raw, spos)
+            elif nxt_kind == "number" and _INTEGRAL_RE.match(raw):
+                key = str(int(raw))
+            else:
+                raise SVParseError(f"expected string or integer key at offset {spos}, got {raw!r}")
+        elif kind == "ident" and value not in ("true", "false", "nil"):
             self.i += 1
             key = value
             self._next(value="=")
         else:
-            raise SVParseError(f"expected table key at offset {pos}, got {value!r}")
+            key = str(auto)  # positional entry: value with no key
         table[key] = self.parse_value()
 
     def parse_value(self):
