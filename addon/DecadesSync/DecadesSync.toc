@@ -6,3 +6,4 @@
 ## SavedVariablesPerCharacter: DecadesSyncDB
 core.lua
 pos.lua
+inventory.lua
