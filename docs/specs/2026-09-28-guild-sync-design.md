@@ -1,6 +1,6 @@
 # Decades Guild Hub — Design (DRAFT)
 
-Status: draft v2. Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
+Status: draft v3 (GM data list added). Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
 https://youtu.be/ITOSnVrDOVI). Transcript ends where the AI-tools demo starts (music only
 after that), so the app's exact screens were **not** captured. More GM info pending.
 Target: WoW Forever client (Classic-era API; existing WfPos addon uses `## Interface: 11303`, still to be confirmed).
@@ -58,17 +58,73 @@ are officer and member workflows, not desktop ones). The desktop companion's job
 - In-game member-to-member sync uses addon messages: 255 characters each, throttled.
 - No memory reading, no automation.
 
+## Data collection principle (GM, 2026-09-28)
+**Collect any data point that has value when viewed.** The addon collects cheaply and broadly;
+the web app is where the value shows up. Rules that keep this from getting out of hand:
+- The addon stores **rollups** (counts, last-seen, per-zone totals), not raw event streams, so
+  SavedVariables stay small and login stays fast. Raw detail lives only in the combat log.
+- Every collector is its own module with an on/off toggle, so a new data point is a new module.
+- Each data point is listed below as: source → what's stored → where it's shown.
+
+## Data catalog
+### Wave 1 (GM list)
+| Data | In-game source (Classic API) | Stored | Viewed as |
+|---|---|---|---|
+| Loot collected | own capture: `CHAT_MSG_LOOT` (all loot, everyone in range) + **RCLootCouncil adapter** (reads its SV for council awards, reroutes/trades) | item, who, when, where, source (drop/council/trade) | loot ledger, per-item "who has it", per-player history |
+| Reputation | `GetFactionInfo` on `UPDATE_FACTION` | faction, standing, value, per char | guild rep matrix ("who's Exalted with X") |
+| Professions | `GetSkillLineInfo`, trade skill window scan when opened | skill levels + known recipes | crafter directory ("who can make X") |
+| Inventory (bags) | bag scan on `BAG_UPDATE` (debounced) | item counts per char | "who has X", alt totals |
+| Bank / alts | bank scan when `BANKFRAME_OPENED`; every char that logs in adds its own | per char | account-wide totals |
+| Guild bank + logs | **see note below** | contents + deposit/withdraw log | bank page, audit log |
+| Custom player notes | officer/member entry in web app, pushed back to the addon | note, author, visibility | roster, in-game tooltip |
+| Position | `UnitPosition` (WfPos logic) | live via chat log | map live dots |
+| Hearthstone location | `GetBindLocation()` | inn per char | roster column, map pin |
+| "Typically found in" | time-in-zone accumulator (minutes per zone/subzone) | per-char zone histogram | profile ("usually in Orgrimmar bank"), guild heatmap on map |
+| PvP kills + victims | combat log `PARTY_KILL` on players + honor-kill chat; deaths to players from last-damage source | killer → victim count, last time, zone | **rivalries**: "Tyler has killed X 50 times", nemesis list, leaderboards |
+| Sightings | nameplates, target, mouseover, combat log GUIDs, deduped per GUID per 5 min | name/type → times seen, first/last seen, zones | "Spiderfang seen 312 times", rare/world-boss/enemy-player tracker, map heat |
+| Chat history (**Elephant** remake) | chat events → per-channel log with a size cap | guild/officer/raid/whisper logs, local by default | in-game log window; guild/officer channels optionally synced |
+
+**Guild bank note:** original vanilla (the Classic-era base) had **no guild bank**. It came in TBC.
+If WoW Forever has one, read it natively (tabs + money log). If not, the "guild bank" is bank alts:
+scan their bags, bank and mail, and build the log from their trades, mail and loot. **Confirm which.**
+
+**Elephant:** it's a chat logger ("remembers the chat"). I could not confirm it has a WoW Forever
+build. Plan: build it as the `chat` module either way. It's small, and it gives us guild-channel
+history for free.
+
+### Proposed additions (same principle, cheap to collect)
+- Deaths: what killed you, where, level. Guild "most deaths", dangerous zones on the map.
+- Leveling timeline: level-up timestamps and `/played`. "Race to 60" board for launch week.
+- Gold over time per char, repair spend.
+- Gathering: herbs and ore picked, by node location (ties into the map's 17,637 nodes).
+- Dungeon and raid runs: clears, time, group.
+- Raid consumables and world buffs present on pull (the combat log already has them).
+- Quests completed, for the map/Questie side.
+- Achievements-style firsts: first kill of a boss, first to exalted, first epic mount.
+
+## Sync TO the addon (future state)
+Via the hub-written `Data.lua`, shown in the **guild tab / guild roster** and tooltips:
+- Parses (WCL best/median per player)
+- BiS lists (per class/spec, with an "you have it / you need it" marker)
+- Accolades (badges: firsts, rivalries, top parser, attendance streaks)
+- Custom player notes, rank tags ("Decades · Raider")
+
 ## Pieces
 
 ### 1. `Decades` addon (Lua): one addon, internal modules
 | Module | Does | Exit |
 |---|---|---|
 | core | char, class, level, guild rank, alts, version | SV |
-| loot | loot-council awards in raid (item, winner, officer, reason), synced to officers via addon msgs | SV |
+| loot | all loot seen (`CHAT_MSG_LOOT`) + council awards; RCLootCouncil adapter for reroutes | SV |
 | attendance | raid roster snapshots on boss pulls and kills | SV |
 | bank | guild bank / bank-alt inventory scan | SV |
 | gear (sim-export) | gear, enchants, talents, professions, consumables | SV |
-| pos | position (absorbs WfPos) | chat log |
+| pos | position, hearthstone, time-in-zone (absorbs WfPos) | chat log + SV |
+| inventory | bags, bank, alts, guild bank or bank alts | SV |
+| rep / prof | reputations, professions and recipes | SV |
+| pvp | kills and deaths vs players (rivalries) | SV |
+| sightings | NPC/player/rare sighting counts | SV |
+| chat | Elephant-style chat logger | SV |
 | display | shows hub data in game: your signups, loot history on item tooltips, "Decades · Raider" player tooltip | reads Data.lua |
 
 ### 2. Desktop companion (Windows, lightweight)
@@ -115,7 +171,9 @@ Steps 1–3 need **no addon**. They can ship before launch and cover the old she
 - [ ] Loot rules: pure loot council? Raider priority weighting? Is the ledger visible to everyone?
 - [ ] Does WarcraftLogs support WoW Forever at launch (API/zone IDs)?
 - [ ] Hosting, domain, budget.
-- [ ] Which third-party addons to read (loot addon, Details!, etc.)?
+- [ ] Third-party addons: RCLootCouncil confirmed. Others (Details!, etc.)?
+- [ ] Does WoW Forever have a native guild bank, or is it bank alts?
+- [ ] Does Elephant (or any chat logger) exist for Forever?
 - [ ] Confirm WoW Forever interface version and SavedVariables path.
 
 ## Decisions log
@@ -124,3 +182,4 @@ Steps 1–3 need **no addon**. They can ship before launch and cover the old she
 - 2026-09-28: WfPos folds into the addon as `pos`.
 - 2026-09-28 (v2): Fit to the Decades GM video. The web app is the primary surface. WCL is integrated, not
   replaced (the guild ranks on WCL). Launch-critical = Signups/Raid Builder, WCL Performance, Loot.
+- 2026-09-28 (v3): GM data list added. Principle: collect anything valuable to view, stored as rollups. RCLootCouncil read via adapter, not replaced. Elephant rebuilt as the `chat` module. Sync-to-addon: parses, BiS, accolades in the guild tab.
