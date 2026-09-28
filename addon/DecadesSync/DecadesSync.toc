@@ -1,0 +1,7 @@
+## Interface: 11303
+## Title: Decades Sync
+## Notes: Decades guild data collection. Companion app uploads on logout.
+## Author: Decades
+## Version: 0.1.0
+## SavedVariablesPerCharacter: DecadesSyncDB
+core.lua
