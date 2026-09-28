@@ -1,0 +1,5 @@
+[project]
+name = "decades-companion"
+version = "0.1.0"
+description = "Stdlib-only companion for the DecadesSync addon: watch SavedVariables, parse to JSON, emit Data.lua."
+requires-python = ">=3.11"
