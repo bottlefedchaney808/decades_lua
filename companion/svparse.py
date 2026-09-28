@@ -75,9 +75,14 @@ def _maybe_list(table: dict):
 Token = tuple  # (kind, value, offset)
 
 
-def _tokenize(text: str) -> list[Token]:
-    """Return [(kind, value, offset), ...]; ws tokens are dropped."""
-    tokens: list[Token] = []
+MAX_DEPTH = 200
+"""Nesting deeper than any real SavedVariables table; guards the mutual
+recursion in parse_table/parse_value (CARL R1-F3) and adversarial input."""
+
+
+def _tokenize(text: str):
+    """Yield (kind, value, offset) lazily; ws tokens are dropped (CARL R1-F4:
+    a materialized token list peaked ~30x the input size on multi-MB SVs)."""
     pos = 0
     while pos < len(text):
         m = _TOKEN_RE.match(text, pos)
@@ -85,49 +90,56 @@ def _tokenize(text: str) -> list[Token]:
             snippet = text[pos:pos + 20]
             raise SVParseError(f"unexpected character at offset {pos}: {snippet!r}")
         if m.lastgroup != "ws":
-            tokens.append((m.lastgroup, m.group(), pos))
+            yield (m.lastgroup, m.group(), pos)
         pos = m.end()
-    return tokens
 
 
 class _Parser:
-    def __init__(self, tokens: list[Token]):
-        self.tokens = tokens
-        self.i = 0
+    def __init__(self, tokens, max_depth: int = MAX_DEPTH):
+        self._it = iter(tokens)
+        self._buf: list[Token] = []  # 1-token lookahead
+        self.max_depth = max_depth
+        self.depth = 0
 
     def _peek(self) -> Token:
-        if self.i < len(self.tokens):
-            return self.tokens[self.i]
-        return ("eof", "", len(self.tokens))
+        if not self._buf:
+            try:
+                self._buf.append(next(self._it))
+            except StopIteration:
+                return ("eof", "", -1)
+        return self._buf[0]
 
     def _next(self, kind: str | None = None, value: str | None = None) -> Token:
         tok_kind, tok_value, pos = self._peek()
-        if tok_kind is None:
+        if tok_kind == "eof":
             raise SVParseError(f"unexpected end of input (wanted {value or kind})")
         if kind is not None and tok_kind != kind:
             raise SVParseError(f"expected {kind} at offset {pos}, got {tok_value!r}")
         if value is not None and tok_value != value:
             raise SVParseError(f"expected {value!r} at offset {pos}, got {tok_value!r}")
-        self.i += 1
+        self._buf.pop(0)
         return tok_kind, tok_value, pos
 
     def parse_file(self) -> dict:
         _, name, _ = self._next("ident")
         self._next(value="=")
         result = self.parse_table()
-        if self.i != len(self.tokens):
+        if self._peek()[0] != "eof":
             _, tok_value, pos = self._peek()
             raise SVParseError(f"trailing input at offset {pos}: {tok_value!r}")
         return result
 
     def parse_table(self):
+        self.depth += 1
+        if self.depth > self.max_depth:
+            raise SVParseError(f"nesting too deep (>{self.max_depth})")
         self._next(value="{")
         table = {}
         auto = 0  # positional-entry auto index (1-based, Lua semantics)
         while True:
             kind, value, pos = self._peek()
             if kind == "punct" and value == "}":
-                self.i += 1
+                self._next()
                 break
             auto += 1
             self.parse_entry(table, auto)
@@ -137,11 +149,12 @@ class _Parser:
             if kind == "punct" and value == "}":
                 break
             raise SVParseError(f"expected ',' or '}}' at offset {pos}, got {value!r}")
+        self.depth -= 1
         return _maybe_list(table)
     def parse_entry(self, table: dict, auto: int) -> None:
         kind, value, pos = self._peek()
         if kind == "punct" and value == "[":
-            self.i += 1
+            self._next()
             nxt_kind, raw, spos = self._next()
             self._next(value="]")
             self._next(value="=")
@@ -152,7 +165,7 @@ class _Parser:
             else:
                 raise SVParseError(f"expected string or integer key at offset {spos}, got {raw!r}")
         elif kind == "ident" and value not in ("true", "false", "nil"):
-            self.i += 1
+            self._next()
             key = value
             self._next(value="=")
         else:
@@ -162,15 +175,15 @@ class _Parser:
     def parse_value(self):
         kind, value, pos = self._peek()
         if kind == "string":
-            self.i += 1
+            self._next()
             return _decode_string(value, pos)
         if kind == "number":
-            self.i += 1
+            self._next()
             return int(value) if _INTEGRAL_RE.match(value) else float(value)
         if kind == "punct" and value == "{":
             return self.parse_table()
         if kind == "ident" and value in ("true", "false", "nil"):
-            self.i += 1
+            self._next()
             return {"true": True, "false": False, "nil": None}[value]
         raise SVParseError(f"expected a value at offset {pos}, got {value!r}")
 
