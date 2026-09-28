@@ -28,20 +28,31 @@ local function scanBags(tbl, bagIds)
   end
 end
 
-local dirty, acc = false, 0
+local dirty, acc, bankOpen = false, 0, false
+local BANK_BAGS = {BANK_CONTAINER, 5, 6, 7, 8, 9, 10}
+local CHAR_BAGS = {0, 1, 2, 3, 4}
 local f = CreateFrame("Frame")
 f:RegisterEvent("BAG_UPDATE")
 f:RegisterEvent("BANKFRAME_OPENED")
+f:RegisterEvent("BANKFRAME_CLOSED")
 f:RegisterEvent("PLAYER_ENTERING_WORLD")
 f:SetScript("OnEvent", function(_, event)
   if not mod.db then return end
   if event == "BANKFRAME_OPENED" then
-    scanBags(mod.db.bank, {BANK_CONTAINER, 5, 6, 7, 8, 9, 10})
-    scanBags(mod.db.bags, {0, 1, 2, 3, 4})
+    bankOpen = true
+    scanBags(mod.db.bank, BANK_BAGS)
+    scanBags(mod.db.bags, CHAR_BAGS)
     mod.db.scannedAt = time()
     dirty = false
+  elseif event == "BANKFRAME_CLOSED" then
+    -- last scan while slots are still readable
+    scanBags(mod.db.bank, BANK_BAGS)
+    scanBags(mod.db.bags, CHAR_BAGS)
+    mod.db.scannedAt = time()
+    bankOpen = false
+    dirty = false
   elseif event == "PLAYER_ENTERING_WORLD" then
-    scanBags(mod.db.bags, {0, 1, 2, 3, 4})
+    scanBags(mod.db.bags, CHAR_BAGS)
     mod.db.scannedAt = time()
   else
     dirty = true -- BAG_UPDATE
@@ -53,6 +64,9 @@ f:SetScript("OnUpdate", function(_, elapsed)
   if acc < SCAN_GAP then return end
   acc = 0
   dirty = false
-  scanBags(mod.db.bags, {0, 1, 2, 3, 4})
+  scanBags(mod.db.bags, CHAR_BAGS)
+  if bankOpen then
+    scanBags(mod.db.bank, BANK_BAGS)
+  end
   mod.db.scannedAt = time()
 end)
