@@ -43,10 +43,10 @@
   "use strict";
   // Streamed build telemetry (updated each gate pass)
   var DATA = {
-    generatedAt: "2026-09-28T01:15:00",
-    totals: { commits: 11, tests: 28, testSuite: "green", phasesShipped: 1, wavesRun: 3 },
+    generatedAt: "2026-09-28T01:38:00",
+    totals: { commits: 15, tests: 38, testSuite: "green", phasesShipped: 1, wavesRun: 3 },
     phases: [
-      { id: "A", name: "Addon + Companion Pipe", status: "run", gate: "wave 3 in flight — main.py + e2e + README, then PM tags v0.1.0",
+      { id: "A", name: "Addon + Companion Pipe", status: "done", gate: "v0.1.0 tagged — offline loop proven end-to-end (PM probe: store 0001.json + Data.lua round-trip)",
         stats: [["Lua modules", "core · pos · inventory · data"], ["Companion", "svparse · watch · store · emitter"], ["Commits", "11"], ["Tests", "28 green"], ["PM fixes", "array grammar both directions"]],
         progress: 78 },
       { id: "B", name: "Firebase Backend (decades-prod)", status: "block", gate: "blocked on decades_app access + Blaze budget answers",
