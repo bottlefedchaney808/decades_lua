@@ -1,6 +1,6 @@
 # Decades Guild Hub — Design (DRAFT)
 
-Status: draft v4 (Firebase backend, forever_sim integration). Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
+Status: draft v5 (min-max suite, two sim engines, directions, public face). Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
 https://youtu.be/ITOSnVrDOVI). Transcript ends where the AI-tools demo starts (music only
 after that), so the app's exact screens were **not** captured. More GM info pending.
 Target: WoW Forever client **1.60.x** (forever_sim scrapes build `1.60.1.70009`). WfPos's `## Interface: 11303` is
@@ -181,8 +181,7 @@ Windows Credential Manager and calls `ingest`/`addonData` with ID tokens. No pas
 
 ## Sim integration (forever_sim already exists)
 `https://sim.decades.gg` is the guild's sim: every DPS spec plus 3 tanks. It sources from the Forever
-client via wago.tools and is under active daily development. **Drop the plan to build our own sim
-from `IDEA.md`**; it would duplicate this.
+client via wago.tools and is under active daily development. It pairs with Jason's WoW4_SiMs engine (see **Two sim engines, one interface**). **No third sim.**
 Integration is link-based, which the sim's CSP (`connect-src 'self'`) needs anyway:
 - The addon `gear` module exports gear, enchants, talents and consumables.
 - The hub builds a forever_sim **setup code** (a `SimConfig` deflated to base64url, `src/app/setup-code.ts`,
@@ -191,6 +190,100 @@ Integration is link-based, which the sim's CSP (`connect-src 'self'`) needs anyw
 - Needs forever_sim's `SimConfig` schema + `CONFIG_VERSION` as a shared contract. **Coordinate with its
   maintainer; don't fork the format.**
 - Later: the sim's optimizer (M5.7) produces **BiS lists**, and the hub pushes them into the addon.
+
+## Min-max suite: Sim × WCL × Performance
+The question every raider asks after a kill: **"How much did I leave on the table, and what is the one
+thing I should fix next?"** The suite answers it with three views of the same pull and a ranked list of fixes.
+
+| View | Answers | Source |
+|---|---|---|
+| **Sim** (expected) | what this character *should* do with this gear, talents and consumables on this fight | forever_sim (DPS/TPS, Forever-sourced) + WoW4_SiMs (healers, raid sim, rotation timeline) |
+| **WCL** (actual, ranked) | what you *did*, and where it ranks in the region | WCL API v2: rankings + report events |
+| **Performance** (why) | the execution behind the number | computed from WCL report events (or our own combat-log parser if WCL doesn't support Forever): casts per ability, cooldown usage, buff/debuff/DoT uptime, idle GCD time, resource overcap, early refreshes and clipping, deaths and their timing, consumables and buffs present on pull |
+
+### Fight-adjusted expectation (the core idea)
+A raw sim is a stationary target dummy. Comparing it to a real kill isn't fair, and players ignore it.
+So every kill is re-simmed under the fight's **real conditions**, taken from its log: duration, the
+player's active time (downtime, movement, death), target count, the buffs and debuffs actually up,
+and the consumables actually used. That gives four numbers per player per boss:
+
+| Number | Meaning |
+|---|---|
+| **BiS** | sim, best-in-slot gear available now |
+| **Ceiling** | sim, your gear, ideal setup (full consumables, buffs, enchants) |
+| **Expected** | sim, your gear, *this fight's* real conditions |
+| **Actual** | WCL |
+
+- Ceiling − Expected = **setup loss**: consumables, buffs, enchants. Fixable before next raid.
+- Expected − Actual = **execution loss**: rotation, uptime, cooldowns. Fixable with practice.
+- BiS − Ceiling = **gear gap**: tied to upgrades and the loot ledger.
+
+### Critique engine: every fix is measured
+Each finding is re-simmed **with the fix applied**, so every line carries a measured gain, and the list
+is ranked by gain. No generic advice. Card shape (illustrative numbers, not measured):
+```
+Grukk · Fury Warrior · Ragnaros kill · WCL 78
+Actual 612 · Expected 701 · Ceiling 744 · BiS 866 DPS
+1. Execution  Bloodthirst on cooldown 81% of the fight (sim 97%)       +38  [timeline]
+2. Gear       next upgrade: <item> from <boss>, loot priority #3        +31  [loot] [go there]
+3. Setup      no Elixir of the Mongoose                                 +24  [where to get it]
+4. Execution  14 s of idle GCD in phase 2                               +19  [timeline]
+```
+- **Rotation critique**: casts per active minute vs the sim's, cooldown uses vs available uses,
+  uptimes vs the sim's, idle GCD, clipping, overcap. Sources: WCL events, plus the sim's per-ability,
+  aura, resource and timeline metrics (WoW4_SiMs `detailed_results`: cast, aura, resource, timeline).
+- **Gear critique**: from the addon's gear export. Missing or wrong enchants (by sim stat weights), hit
+  and weapon-skill caps, set bonuses, and an upgrade list per slot with its source
+  (drop/crafted/rep/quest/vendor), cross-referenced to the loot ledger (who's ahead of you), guild
+  crafters and the guild bank.
+- **Mentor overlay**: your cast timeline laid over the guild's top parser of the same spec on the
+  same boss. This is Reed's mentorship idea turned into a tool.
+- Healers: WCL HPS + overheal vs WoW4_SiMs healing sims. Tanks: TPS in both sims.
+
+### Officer views
+- **Pre-pull setup check**: raid-wide missing consumables and buffs (addon + log). The cheapest DPS there is.
+- **Raid Builder + raid sim**: sim the groups built from signups (WoW4_SiMs raid sim). Evidence for comp and bench calls.
+- **Trends**: execution loss per player over weeks. Feeds Player Score (replaces the manual PRS grading).
+
+### Two sim engines, one interface
+| Engine | Strength | Use |
+|---|---|---|
+| **forever_sim** (guild, sim.decades.gg, TS) | Forever-client-sourced numbers, optimizer (M5.7) → BiS | headline DPS/TPS and BiS wherever it covers the spec |
+| **WoW4_SiMs** (Jason, wowsims fork, Go→WASM + CLI) | all 19 specs incl. healers, raid sim, APL rotations, per-ability timeline/aura/resource metrics, WowSimsExporter import | healers, raid sim, rotation-timeline critique. Its combat values are still 1.12/SoD-scale until its database is regenerated from Forever client data (its `STATUS.md`) |
+
+- `SimProvider` interface: `simulate(setup, conditions) → {metric, perAbility, auras, resources,
+  timeline, assumptions[]}`. The hub calls either engine headless. forever_sim's TS engine runs in
+  Functions or Cloud Run; WoW4_SiMs runs `wowsimcli` in a Cloud Run job, or WASM in the browser.
+- **Cross-check**: where both engines cover a spec, run both. A disagreement over 5% opens an audit item
+  for the sim maintainers instead of silently picking one.
+- **Provenance on every number**: `[F]` Forever client, `[C]` Classic Era, `[?]` assumption, matching
+  forever_sim's doctrine. Nothing is shown as fact that isn't sourced.
+
+## Directions: "Go there" everywhere
+Anything tied to a place gets a location, resolved from the map data (49 zones, 263 landmarks, 1,285
+POIs incl. flight masters/zeppelins/boats, 17,637 herb and ore nodes) plus item-source data. That covers
+upgrade drops, bosses, vendors, rep quartermasters, trainers, consumable reagents, gather nodes, a
+crafter's "usually found in", and rare spawns.
+
+**"Get it" resolution order (guild first, saves time):**
+you already own it (bags/bank/alts) → guild bank → guild crafter (who, where they usually are) →
+drop/vendor/farm location with a route.
+
+| Surface | Form |
+|---|---|
+| Web | "Show on map" deep link (`#lat/lng/zoom`) plus a route from your hearth or live position via flight paths and zeppelins/boats |
+| In game | addon `nav` module: TomTom-style arrow + distance from `UnitPosition`; `/dec go <target>`; step list printed to chat ("Hearth → fly Crossroads → run south to …") |
+| Discord | `/where <item or npc>` returns sources, guild holders and crafters, and a map link |
+| Critique | a consumables shopping list per player, turned into a reagent-farming route over the node data |
+
+## Public face: represent Decades
+- **Public guild page** on decades.gg: progression, region rank, parse averages, accolades, rivalry
+  highlights. Reed called the SoD raid sheet "a massive recruiting tool"; this is its successor.
+- **Member card**: one page per character: parse, sim gap, gear vs BiS, rep, professions, accolades,
+  "usually found in". Shareable as an image in Discord.
+- **Quality bar = forever_sim's**: mobile and desktop designed separately, shadcn/ui, provenance on
+  every number, e2e-tested before deploy.
+- Per-member opt-out for the public card and live position. Officer notes are never public.
 
 ## Pieces
 
@@ -244,7 +337,9 @@ web UI, what it pushes into the game.
 3. WCL Performance pull.
 4. Addon core + loot + desktop companion upload, giving the Loot ledger.
 5. Attendance, bank, gear, then Player Score and Economy.
-6. Map module, sim.decades.gg setup-code links, AI assistant, Discord bot extras.
+6. Min-max suite: `SimProvider` for both engines, fight-adjusted re-sims, critique cards, mentor overlay.
+7. Go-there: map deep links + routes, addon `nav` arrow, Discord `/where`.
+8. Public guild page + member cards; AI assistant; Discord bot extras.
 
 Steps 1–3 need **no addon**. They can ship before launch and cover the old sheet's job.
 
@@ -252,7 +347,8 @@ Steps 1–3 need **no addon**. They can ship before launch and cover the old she
 - [ ] **What have Reed and Leer already built?** (the AI tool shown at the end of the video) Extend it, or replace it?
 - [ ] Launch date and the hard deadline for signups being live.
 - [ ] Loot rules: pure loot council? Raider priority weighting? Is the ledger visible to everyone?
-- [ ] Does WarcraftLogs support WoW Forever at launch (API/zone IDs)?
+- [ ] Does WarcraftLogs support WoW Forever at launch (API/zone IDs)? If not, our own combat-log parser feeds the Performance view.
+- [ ] WCL API v2: whose client credentials, and is the points quota enough for report events on every kill?
 - [ ] **Access to decades_app** (the web app with Discord sign-in; its repo isn't public). Does the hub live inside it or on its own Hosting site?
 - [ ] Firebase roles for us on `decades-prod` (a dev/staging project, or emulator only?) and the Blaze budget/alerts owner.
 - [ ] forever_sim maintainer (commits are by "John Anderson"; is that Leer?): agree on the `SimConfig` setup-code contract.
@@ -269,3 +365,4 @@ Steps 1–3 need **no addon**. They can ship before launch and cover the old she
   replaced (the guild ranks on WCL). Launch-critical = Signups/Raid Builder, WCL Performance, Loot.
 - 2026-09-28 (v3): GM data list added. Principle: collect anything valuable to view, stored as rollups. RCLootCouncil read via adapter, not replaced. Elephant rebuilt as the `chat` module. Sync-to-addon: parses, BiS, accolades in the guild tab.
 - 2026-09-28 (v4): Backend = Firebase `decades-prod`, following forever_sim's conventions (Functions 2nd gen nodejs22 us-central1, WIF deploy, Secret Manager). Firestore rollups; addon data written only by Functions; login and Discord bot reuse decades_app. Own-sim plan dropped; integrate with sim.decades.gg via setup-code links.
+- 2026-09-28 (v5): Min-max suite (Sim × WCL × Performance, fight-adjusted re-sims, measured critique). Two engines behind `SimProvider`: forever_sim (headline/BiS) + WoW4_SiMs (healers, raid sim, timeline). Go-there directions on every surface. Public guild page + member cards. Supersedes v4's "own sim dropped".
