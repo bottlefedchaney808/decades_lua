@@ -1,9 +1,10 @@
 # Decades Guild Hub — Design (DRAFT)
 
-Status: draft v3 (GM data list added). Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
+Status: draft v4 (Firebase backend, forever_sim integration). Refit to the GM's "Welcome to Forever" video (Decades, Reed, 2026-09-28,
 https://youtu.be/ITOSnVrDOVI). Transcript ends where the AI-tools demo starts (music only
 after that), so the app's exact screens were **not** captured. More GM info pending.
-Target: WoW Forever client (Classic-era API; existing WfPos addon uses `## Interface: 11303`, still to be confirmed).
+Target: WoW Forever client **1.60.x** (forever_sim scrapes build `1.60.1.70009`). WfPos's `## Interface: 11303` is
+probably wrong for Forever: read the real value in game with `/dump select(4, GetBuildInfo())`.
 
 ## Who it's for (from the video)
 - Guild **Decades**, GM Reed, founded 2005. Launch target **125–150+ players** (98 online at
@@ -46,7 +47,7 @@ are officer and member workflows, not desktop ones). The desktop companion's job
  WoWChatLog.txt (pos) ─────┘                                        ├─ Performance (WCL API) <── WarcraftLogs
  WoWCombatLog.txt ──> official WCL uploader (unchanged)             ├─ Roster / Recruiting / Player Score
  Decades addon <── Data.lua <── writer <─────────────────────────── ├─ Economy / Bank
-                                                                    ├─ Map, Sim (Jason's modules)
+                                                                    ├─ Map; Sim = link to sim.decades.gg
                                    Discord bot <──────────────────> └─ AI assistant over all of it
 ```
 
@@ -109,6 +110,88 @@ Via the hub-written `Data.lua`, shown in the **guild tab / guild roster** and to
 - Accolades (badges: firsts, rivalries, top parser, attendance streaks)
 - Custom player notes, rank tags ("Decades · Raider")
 
+## Firebase integration (backend = Firebase, project `decades-prod`)
+Found by reading `Decades-Guild/forever_sim` (public). What already exists in `decades-prod`:
+- **Hosting**: site `forever-sim`, which is `https://sim.decades.gg`. It's a static Vite + React + TS + shadcn app.
+- **Functions (2nd gen)**: codebase `forever-sim`, nodejs22, `us-central1`. It runs the Discord bot
+  (`discordInteractions` HTTPS endpoint + `discordWorker` on Pub/Sub `discord-jobs`).
+- **Discord application `decades_app`** (`1549936086892150885`, server `170966255409430528`). Its OAuth
+  client is **already used for "decades_app's sign-in"**, so a Decades web app with Discord login
+  already exists or is in progress (repo not public). Its router is designed to take decades_app's commands too.
+- **Deploy**: GitHub Actions to Workload Identity Federation (no JSON keys) to `firebase-tools@15`. Secrets
+  go in Secret Manager. No Firestore in use yet (the bot keeps its state in memory).
+
+**Rule: the hub lives inside `decades-prod` and follows these conventions. No second project, no second login.**
+
+### Layout
+| Piece | Firebase service | Notes |
+|---|---|---|
+| Web app | Hosting, new target (e.g. `guild-hub`), or pages inside decades_app | same stack as the sim (Vite/React/TS/shadcn) |
+| Login | Firebase Auth, **reusing decades_app's Discord sign-in** | Discord isn't a built-in Auth provider. Default: a Function swaps the Discord OAuth code for a Firebase **custom token**, with claims `{discordId, rank, roles}` |
+| Data | **Firestore** | rollup documents, not raw event streams (keeps reads and cost down) |
+| Ingest | Functions codebase `guild-hub`: `ingest` (HTTPS, needs an ID token) | the only writer for addon data (Admin SDK) |
+| Raw uploads | Cloud Storage `uploads/{uid}/{ts}.json.gz` | kept 30 days so the parser can be replayed after a fix |
+| WCL pull | scheduled Function, WCL API v2 client credentials in Secret Manager | writes the `parses` cache |
+| Addon down-sync | `addonData` (HTTPS): one JSON bundle per member | the companion turns it into `Data.lua` |
+| Discord | **the existing `discordInteractions` router** | hub commands register as decades_app routes. No second bot |
+| Rank sync | Function: Discord roles and guild rank (from addon uploads) to Auth custom claims | rules key on claims |
+
+### Data flow
+```
+addon SV ─> companion (parse Lua -> JSON, gzip) ─POST + Firebase ID token─> ingest()
+   ingest: validate schema v# -> keep raw in Storage -> idempotent merge into Firestore rollups
+web app  <── Firestore listeners (members) ──┐
+companion <── addonData() JSON ──────────────┤──> writes GuildSync Data.lua
+Discord  <── discordWorker jobs ─────────────┘
+WCL API ──scheduled──> parses/{charId}
+```
+
+### Firestore model (first cut)
+```
+members/{discordId}                      rank, roles, mains/alts -> characterIds
+characters/{realm-name}                  class, level, race, guildRank, hearth, lastSeen, owner
+  /snapshots/{kind}                      kind = bags|bank|rep|professions|gear   (latest only; overwritten)
+  /zoneTime/{zoneId}                     minutes by subzone        ("typically found in")
+  /pvp/{victimKey}                       kills, lastAt, zones      (rivalries; mirrored counts on the victim)
+loot/{autoId}                            item, winner, source(drop|council|trade|reroute), raid, boss, at, rclcId
+bank/{bankCharId} + /log/{id}            contents + ledger (guild bank or bank alts)
+sightings/{entityKey}                    count, firstAt, lastAt, byZone{}, bySpotter{}   (guild-wide rollup)
+signups/{weekId}/entries/{discordId}     days[], lockouts, note
+raids/{raidId}                           night, group, roster[], comp
+parses/{characterId}                     WCL best/median per boss (Function-written)
+notes/{characterId}/items/{id}           text, author, visibility(public|council|officer)
+accolades/{id}                           type, characterId, at, detail
+chat/{channel}/days/{yyyy-mm-dd}         officer/guild chat only (opt-in), capped
+uploads/{uploadId}                       uploader, charId, seq, schemaVersion, status (dedupe key)
+```
+Sightings and PvP use `FieldValue.increment` in batched writes. The addon sends **deltas since the
+last upload** (with a per-character sequence number), so a resent upload doesn't double-count.
+
+### Security rules (summary)
+- Client writes are allowed only on: your own `signups` entry, and `notes` (council+).
+  Everything the addon produces is written by Functions only.
+- Read: members read guild data; `notes` and `chat` follow their `visibility`, based on custom claims;
+  recruiting/officer data is officer-only.
+- Emulator suite + rules unit tests before any deploy (matches forever_sim's gate).
+
+### Desktop companion auth
+Device-link flow: the companion opens `https://<hub>/link?code=XXXX`. The member signs in with Discord.
+A Function binds the code and returns a Firebase custom token. The companion keeps the refresh token in
+Windows Credential Manager and calls `ingest`/`addonData` with ID tokens. No passwords in the companion.
+
+## Sim integration (forever_sim already exists)
+`https://sim.decades.gg` is the guild's sim: every DPS spec plus 3 tanks. It sources from the Forever
+client via wago.tools and is under active daily development. **Drop the plan to build our own sim
+from `IDEA.md`**; it would duplicate this.
+Integration is link-based, which the sim's CSP (`connect-src 'self'`) needs anyway:
+- The addon `gear` module exports gear, enchants, talents and consumables.
+- The hub builds a forever_sim **setup code** (a `SimConfig` deflated to base64url, `src/app/setup-code.ts`,
+  decision D21) and links `https://sim.decades.gg/#s=<code>`. "Sim my character" is one click, from
+  the roster or in game (the link is printed to chat for copying).
+- Needs forever_sim's `SimConfig` schema + `CONFIG_VERSION` as a shared contract. **Coordinate with its
+  maintainer; don't fork the format.**
+- Later: the sim's optimizer (M5.7) produces **BiS lists**, and the hub pushes them into the addon.
+
 ## Pieces
 
 ### 1. `Decades` addon (Lua): one addon, internal modules
@@ -133,7 +216,7 @@ adapters, uploads, and writes Data.lua back. Tray app. Members install it once. 
 replace the WCL uploader: WCL stays the source of truth for rankings.
 
 ### 3. Backend + web app
-Auth: Discord login (the guild lives in Discord). Rank maps to permissions.
+Firebase (see **Firebase integration**). Discord login reused from decades_app; rank maps to custom claims.
 | Module | Priority | Notes |
 |---|---|---|
 | Signups + Raid Builder | **launch-critical** | weekly availability by day, lockouts, drag-and-drop raid groups per night, "who's free Friday" |
@@ -143,25 +226,25 @@ Auth: Discord login (the guild lives in Discord). Rank maps to permissions.
 | Player Score | medium | auto-calculated from attendance, WCL, signup reliability; council adds notes |
 | Economy / Bank | medium | bank contents, material needs vs raid consumable demand |
 | Map | Jason's | existing wow-forever map, guild pins, optional live dots |
-| Sim | Jason's | IDEA.md sim, fed by the gear export |
+| Sim | link-out | existing sim.decades.gg, via setup-code links built from the gear export |
 | AI assistant | later | ask questions over signups, loot, logs; drafts raid comps and feedback |
 | Leadership dashboard | later | capability model, coverage per bucket |
 
 ### 4. Discord bot
-Signup reminders and links, raid-night announcements, loot award feed. Ties the Discord
-(Reed's priority) to the hub.
+Signup reminders and links, raid-night announcements, loot award feed. Added as routes on the
+**existing** `discordInteractions` router (decades_app application), not a new bot.
 
 ## Module contract
 Every module defines: data source (addon / adapter / WCL / web form), schema, permissions,
 web UI, what it pushes into the game.
 
 ## Build order (proposed)
-1. Web skeleton + Discord login + roster (ranks and permissions).
+1. `guild-hub` Functions codebase + Firestore + rules/emulator tests in `decades-prod`; reuse decades_app login; roster.
 2. Signups + Raid Builder (replaces the Google sheet; usable with no addon at all).
 3. WCL Performance pull.
 4. Addon core + loot + desktop companion upload, giving the Loot ledger.
 5. Attendance, bank, gear, then Player Score and Economy.
-6. Map and Sim modules, AI assistant, Discord bot extras.
+6. Map module, sim.decades.gg setup-code links, AI assistant, Discord bot extras.
 
 Steps 1–3 need **no addon**. They can ship before launch and cover the old sheet's job.
 
@@ -170,16 +253,19 @@ Steps 1–3 need **no addon**. They can ship before launch and cover the old she
 - [ ] Launch date and the hard deadline for signups being live.
 - [ ] Loot rules: pure loot council? Raider priority weighting? Is the ledger visible to everyone?
 - [ ] Does WarcraftLogs support WoW Forever at launch (API/zone IDs)?
-- [ ] Hosting, domain, budget.
+- [ ] **Access to decades_app** (the web app with Discord sign-in; its repo isn't public). Does the hub live inside it or on its own Hosting site?
+- [ ] Firebase roles for us on `decades-prod` (a dev/staging project, or emulator only?) and the Blaze budget/alerts owner.
+- [ ] forever_sim maintainer (commits are by "John Anderson"; is that Leer?): agree on the `SimConfig` setup-code contract.
 - [ ] Third-party addons: RCLootCouncil confirmed. Others (Details!, etc.)?
 - [ ] Does WoW Forever have a native guild bank, or is it bank alts?
 - [ ] Does Elephant (or any chat logger) exist for Forever?
-- [ ] Confirm WoW Forever interface version and SavedVariables path.
+- [ ] Confirm the Forever interface number (`GetBuildInfo`) and the SavedVariables path.
 
 ## Decisions log
 - 2026-09-28: One addon + one companion + one backend; features are modules on a shared pipe.
-- 2026-09-28: Map (wow-forever) and sim (IDEA.md) are modules, not separate apps.
+- 2026-09-28: Map (wow-forever) is a module. (Sim part superseded by v4.)
 - 2026-09-28: WfPos folds into the addon as `pos`.
 - 2026-09-28 (v2): Fit to the Decades GM video. The web app is the primary surface. WCL is integrated, not
   replaced (the guild ranks on WCL). Launch-critical = Signups/Raid Builder, WCL Performance, Loot.
 - 2026-09-28 (v3): GM data list added. Principle: collect anything valuable to view, stored as rollups. RCLootCouncil read via adapter, not replaced. Elephant rebuilt as the `chat` module. Sync-to-addon: parses, BiS, accolades in the guild tab.
+- 2026-09-28 (v4): Backend = Firebase `decades-prod`, following forever_sim's conventions (Functions 2nd gen nodejs22 us-central1, WIF deploy, Secret Manager). Firestore rollups; addon data written only by Functions; login and Discord bot reuse decades_app. Own-sim plan dropped; integrate with sim.decades.gg via setup-code links.
