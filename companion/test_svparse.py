@@ -24,6 +24,20 @@ class TestParseSV(unittest.TestCase):
         self.assertEqual(parse_sv('DecadesSyncDB = { [1]="a", ["x"]="b", }'), {"1": "a", "x": "b"})
     def test_scalar_array(self):
         self.assertEqual(parse_sv('DecadesSyncDB = { 1, 2, 3, }'), [1, 2, 3])
+    def test_string_item_ids_stay_dict(self):
+        # Addon inventory keys are itemID strings. Dense "1".."n" must NOT become a list.
+        self.assertEqual(
+            parse_sv('DecadesSyncDB = { ["bags"] = { ["1"] = 5, ["2"] = 3, }, }'),
+            {"bags": {"1": 5, "2": 3}},
+        )
+        self.assertEqual(
+            parse_sv('DecadesSyncDB = { ["bags"] = { ["13482"] = 1, ["13503"] = 4, }, }'),
+            {"bags": {"13482": 1, "13503": 4}},
+        )
+    def test_max_depth_raises(self):
+        nested = "{" * 201 + "}" * 201
+        with self.assertRaises(SVParseError):
+            parse_sv("DecadesSyncDB = " + nested)
 
 if __name__ == "__main__":
     unittest.main()

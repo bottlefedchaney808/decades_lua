@@ -34,7 +34,7 @@ from pathlib import Path
 
 from companion.emitter import emit_data_lua
 from companion.store import Store
-from companion.svparse import parse_sv
+from companion.svparse import SVParseError, parse_sv
 from companion.watch import Watcher, find_wow
 
 __all__ = ["run", "main", "char_key"]
@@ -68,33 +68,81 @@ def load_config(config_path: str | Path) -> dict:
     return cfg
 
 
-def _cycle(cfg: dict, store_dir: Path) -> str | None:
+def _cycle(cfg: dict, store_dir: Path, wow: Path | None = None) -> str | None:
     """Run one watcher poll; store + emit on change. Returns char key or None."""
-    wow = find_wow(cfg["wow_root"] or None)
-    matches = wow.glob(SV_GLOB)
-    try:
-        sv_path = next(matches)
-    except StopIteration:  # pragma: no cover - find_wow already proved it exists
-        raise FileNotFoundError(f"No {SV_GLOB} under {wow}") from None
+    wow = wow or find_wow(cfg["wow_root"] or None)
+    matches = sorted(wow.glob(SV_GLOB))
+    if not matches:  # pragma: no cover - find_wow already proved it exists
+        raise FileNotFoundError(f"No {SV_GLOB} under {wow}")
 
-    watcher = _watchers.get(str(sv_path))
-    if watcher is None:
-        watcher = _watchers[str(sv_path)] = Watcher(sv_path)
-    if watcher.poll() is None:
-        return None
+    synced = None
+    for sv_path in matches:  # every account gets a chance (CARL R1-F10)
+        watcher = _watchers.get(str(sv_path))
+        if watcher is None:
+            watcher = _watchers[str(sv_path)] = Watcher(sv_path)
+        if watcher.poll() is None:
+            continue
 
-    sv = parse_sv(sv_path.read_text(encoding="utf-8", errors="replace"))
-    if not isinstance(sv, dict):  # top-level positional-array edge case
-        sv = {"value": sv}
-    key = char_key(sv)
-    Store(store_dir).append(key, sv)
-    _upload(cfg, key)
-    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    # <wow> sits 4 levels above the SV file: SavedVariables/<account>/Account/WTF
-    data_lua = sv_path.parents[4] / ADDON_DATA_RELPATH
-    emit_data_lua({"generatedAt": generated_at, "roster": []}, data_lua)
-    print(f"synced {key} -> {data_lua}")
-    return key
+        text = _read_stable(sv_path)  # CARL R1-F2: don't parse a mid-write file
+        if text is None:
+            _watchers.pop(str(sv_path), None)  # retry next cycle
+            continue
+        try:
+            sv = parse_sv(text)  # strict utf-8 (CARL R1-F12)
+        except (SVParseError, RecursionError):
+            _watchers.pop(str(sv_path), None)  # CARL R1-F2: retry next cycle
+            continue
+        if not isinstance(sv, dict):  # top-level positional-array edge case
+            sv = {"value": sv}
+        key = char_key(sv)
+        Store(store_dir).append(key, sv)
+        _upload(cfg, key)
+        generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        # <wow> sits 4 levels above the SV file: SavedVariables/<account>/Account/WTF
+        data_lua = sv_path.parents[4] / ADDON_DATA_RELPATH
+        _emit_with_retry({"generatedAt": generated_at, "roster": []}, data_lua)
+        print(f"synced {key} -> {data_lua}")
+        synced = key
+    return synced
+
+
+def _read_stable(sv_path: Path, attempts: int = 4, settle: float = 0.25) -> str | None:
+    """Read the SV only when its size+mtime have settled (CARL R1-F2).
+
+    The game writes SavedVariables at logout/reload; a poll landing mid-write
+    used to parse a partial file and lose the snapshot forever. Returns the
+    text once stable, or None if still churning after `attempts`.
+    """
+    last = None
+    for _ in range(attempts):
+        try:
+            st = sv_path.stat()
+            snap = (st.st_mtime_ns, st.st_size)
+            if snap == last:
+                return sv_path.read_text(encoding="utf-8")
+            last = snap
+        except OSError:
+            return None
+        time.sleep(settle)
+    return None
+
+
+def _emit_with_retry(data: dict, out: Path, attempts: int = 3, backoff: float = 0.5) -> None:
+    """Emit Data.lua, tolerating a transiently-locked target (CARL R1-F7).
+
+    Windows refuses os.replace while another process (AV scan, editor, the
+    game itself) holds the target without FILE_SHARE_DELETE. Retry briefly,
+    then give up for this cycle -- the next sync rewrites it anyway.
+    """
+    for i in range(attempts):
+        try:
+            emit_data_lua(data, out)
+            return
+        except PermissionError:
+            if i == attempts - 1:
+                print(f"WARN: {out.name} locked, skipped this cycle", file=sys.stderr)
+                return
+            time.sleep(backoff)
 
 
 def _upload(cfg: dict, key: str) -> None:
@@ -109,12 +157,24 @@ def run(config_path: str | Path, once: bool = True) -> str | None:
     config_path = Path(config_path)
     cfg = load_config(config_path)
     store_dir = config_path.parent / "store"
+    wow = find_wow(cfg["wow_root"] or None)  # resolve once (CARL R1-F5)
+    backoff = float(cfg.get("poll_seconds", 2.0))
     try:
         while True:
-            result = _cycle(cfg, store_dir)
+            try:
+                result = _cycle(cfg, store_dir, wow=wow)
+            except (OSError, RecursionError, NotImplementedError) as exc:
+                if once:
+                    raise
+                print(f"WARN: cycle failed ({type(exc).__name__}: {exc}); retrying",
+                      file=sys.stderr)  # CARL R1-F1: one bad cycle never kills the loop
+                time.sleep(backoff)
+                backoff = min(30.0, backoff * 2)
+                continue
+            backoff = float(cfg.get("poll_seconds", 2.0))
             if once:
                 return result
-            time.sleep(float(cfg.get("poll_seconds", 2.0)))
+            time.sleep(backoff)
     except KeyboardInterrupt:
         print("companion stopped")
         return None

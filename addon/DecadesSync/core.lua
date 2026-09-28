@@ -12,6 +12,10 @@ function Decades:RegisterModule(name, defaults)
   return mod
 end
 
+-- Core facts live in DecadesSyncDB.core. Register before ADDON_LOADED so
+-- initCharDB creates the table; PLAYER_LOGIN then always writes into it.
+Decades:RegisterModule("core", {})
+
 local frame = CreateFrame("Frame")
 
 local function initCharDB()
@@ -37,15 +41,18 @@ frame:SetScript("OnEvent", function(self, event, arg1)
   elseif event == "PLAYER_LOGIN" then
     -- core facts, refreshed every login
     local _, class = UnitClass("player")
-    local db = DecadesSyncDB and DecadesSyncDB.core
-    if db then
-      db.name = UnitName("player")
-      db.realm = GetRealmName()
-      db.class = class
-      db.level = UnitLevel("player")
-      db.guild, _, db.guildRankIndex = GetGuildInfo("player")
-      db.addonVersion = Decades.VERSION
-      db.lastLogin = date("%Y-%m-%dT%H:%M:%S")
+    DecadesSyncDB = DecadesSyncDB or {}
+    local db = DecadesSyncDB.core
+    if db == nil then
+      db = {}
+      DecadesSyncDB.core = db
     end
+    db.name = UnitName("player")
+    db.realm = GetRealmName()
+    db.class = class
+    db.level = UnitLevel("player")
+    db.guild, _, db.guildRankIndex = GetGuildInfo("player")
+    db.addonVersion = Decades.VERSION
+    db.lastLogin = date("%Y-%m-%dT%H:%M:%S")
   end
 end)

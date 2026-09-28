@@ -6,6 +6,7 @@ local frame, acc = CreateFrame("Frame"), 0
 local lastX, lastY
 
 local function emit()
+  if not mod.db then return end
   local x, y, z = UnitPosition("player")
   if not x or not y then return end
   local zone, sub = GetZoneText(), (GetSubZoneText() or "")

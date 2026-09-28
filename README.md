@@ -104,7 +104,7 @@ If all three happened, the pipe works: game → companion → back into the game
 
 | Module | Data | Where it goes |
 | --- | --- | --- |
-| core | character, realm, class, level, guild, rank, alts | local snapshot |
+| core | character, realm, class, level, guild, rank | local snapshot |
 | pos | zone time ("typically found in"), hearth location, live position | local snapshot + `Logs\WoWChatLog.txt` |
 | inventory | bag + bank item counts | local snapshot |
 
@@ -131,7 +131,7 @@ link — all through this same pipe, then synced to the guild backend.
 ## For developers
 
 ```bash
-python -m unittest discover -s companion -p "test_*.py"   # 38 tests
+python -m unittest discover -s companion -p "test_*.py"   # 40 tests
 ```
 
 - `addon/DecadesSync/` — Lua 5.1, no libraries; namespace `Decades`, SV `DecadesSyncDB`

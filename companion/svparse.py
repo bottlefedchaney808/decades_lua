@@ -136,13 +136,15 @@ class _Parser:
         self._next(value="{")
         table = {}
         auto = 0  # positional-entry auto index (1-based, Lua semantics)
+        string_origin = False
         while True:
             kind, value, pos = self._peek()
             if kind == "punct" and value == "}":
                 self._next()
                 break
             auto += 1
-            self.parse_entry(table, auto)
+            if self.parse_entry(table, auto):
+                string_origin = True
             kind, value, pos = self._next()
             if kind == "punct" and value == ",":
                 continue
@@ -150,9 +152,17 @@ class _Parser:
                 break
             raise SVParseError(f"expected ',' or '}}' at offset {pos}, got {value!r}")
         self.depth -= 1
+        if string_origin:
+            return table
         return _maybe_list(table)
-    def parse_entry(self, table: dict, auto: int) -> None:
+    def parse_entry(self, table: dict, auto: int) -> bool:
+        """Parse one entry. True if the key came from a STRING token.
+
+        STRING keys must never be list-coerced: addon inventory uses itemID
+        strings, and {["1"]=5,["2"]=3} is a bag of items 1 and 2, not an array.
+        """
         kind, value, pos = self._peek()
+        from_string = False
         if kind == "punct" and value == "[":
             self._next()
             nxt_kind, raw, spos = self._next()
@@ -160,6 +170,7 @@ class _Parser:
             self._next(value="=")
             if nxt_kind == "string":
                 key = _decode_string(raw, spos)
+                from_string = True
             elif nxt_kind == "number" and _INTEGRAL_RE.match(raw):
                 key = str(int(raw))
             else:
@@ -171,6 +182,7 @@ class _Parser:
         else:
             key = str(auto)  # positional entry: value with no key
         table[key] = self.parse_value()
+        return from_string
 
     def parse_value(self):
         kind, value, pos = self._peek()
