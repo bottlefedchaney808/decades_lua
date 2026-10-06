@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decades DPS Junkies</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--foreground, #e7e7e5); }
+  h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: .01em; }
+  .sub { color: var(--muted-foreground, #8b8b8b); margin-bottom: 12px; font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { border: 1px solid var(--border, #333); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px; color: var(--muted-foreground, #8b8b8b); background: transparent; }
+  .chip.on { color: var(--accent, #e0b055); border-color: var(--accent, #e0b055); font-weight: 600; }
+  .cols { display: grid; grid-template-columns: minmax(320px, 5fr) minmax(280px, 4fr); gap: 12px; }
+  @media (max-width: 780px) { .cols { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--border, #333); border-radius: 10px; padding: 12px 14px; background: var(--card, #161616); }
+  .panel h2 { margin: 0 0 8px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--border, #2b2b2b); }
+  th { color: var(--muted-foreground, #8b8b8b); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.me td { color: var(--accent, #e0b055); }
+  .rank { display: inline-block; min-width: 20px; text-align: center; border-radius: 4px; font-size: 11px; padding: 1px 4px; }
+  .r1 { background: #e0b05533; color: #e0b055; font-weight: 700; }
+  .r2 { background: #b9c1cc33; color: #b9c1cc; }
+  .r3 { background: #b0793f33; color: #c9925e; }
+  .bar { height: 4px; border-radius: 2px; background: var(--border, #333); overflow: hidden; min-width: 60px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, #e0b055, #e07b55); }
+  svg { display: block; width: 100%; height: auto; }
+  .lgnd { display: flex; gap: 12px; font-size: 11px; color: var(--muted-foreground, #8b8b8b); margin-top: 6px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  .bosshead { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 6px; }
+  .bosshead b { font-size: 13px; }
+  .bosshead span { color: var(--muted-foreground, #8b8b8b); font-size: 11.5px; }
+  footer { margin-top: 12px; color: var(--muted-foreground, #8b8b8b); font-size: 11px; }
+</style>
+</head>
+<body>
+<h1>Decades DPS Junkies</h1>
+<div class="sub">boss leaders · kills · best &amp; avg DPS · progression curves · class mix — illustrative launch-tier data</div>
+
+<div class="chips" id="chips"></div>
+<div class="cols">
+  <div class="panel" id="left"></div>
+  <div class="panel" id="right"></div>
+</div>
+<footer id="foot"></footer>
+
+<script>
+(function () {
+  "use strict";
+  // Illustrative data — same shapes the live board will stream from WCL + our parser + sims.
+  var BOSSES = [
+    { id: "lucifron", name: "Lucifron", kills: 41, best: 742, avg: 588, fastestMin: 1.4 },
+    { id: "magmadar", name: "Magmadar", kills: 38, best: 781, avg: 602, fastestMin: 2.1 },
+    { id: "gehennas", name: "Gehennas", kills: 36, best: 715, avg: 571, fastestMin: 2.3 },
+    { id: "garr", name: "Garr", kills: 34, best: 923, avg: 704, fastestMin: 2.0 },
+    { id: "shazzrah", name: "Shazzrah", kills: 33, best: 868, avg: 655, fastestMin: 1.8 },
+    { id: "baron", name: "Baron Geddon", kills: 31, best: 799, avg: 612, fastestMin: 2.2 },
+    { id: "sulfuron", name: "Sulfuron", kills: 30, best: 881, avg: 668, fastestMin: 2.4 },
+    { id: "golemagg", name: "Golemagg", kills: 28, best: 907, avg: 690, fastestMin: 3.0 },
+    { id: "majordomo", name: "Majordomo", kills: 26, best: 0, avg: 0, fastestMin: 0 },
+    { id: "ragnaros", name: "Ragnaros", kills: 21, best: 866, avg: 641, fastestMin: 4.4 }
+  ];
+  var LEADERS = [
+    { rank: 1, name: "Rock", spec: "Frost Mage", dps: 923, boss: "Garr", pct: 100, me: false },
+    { rank: 2, name: "Ulu", spec: "Enhance Shaman", dps: 907, boss: "Golemagg", pct: 98, me: false },
+    { rank: 3, name: "Squa", spec: "Combat Rogue", dps: 881, boss: "Sulfuron", pct: 95, me: false },
+    { rank: 4, name: "Leer", spec: "Ret Paladin", dps: 868, boss: "Shazzrah", pct: 94, me: false },
+    { rank: 5, name: "Grukk", spec: "Fury Warrior", dps: 866, boss: "Ragnaros", pct: 93, me: true },
+    { rank: 6, name: "Night", spec: "Balance Druid", dps: 799, boss: "Baron Geddon", pct: 87, me: false },
+    { rank: 7, name: "Daytime", spec: "Shadow Priest", dps: 781, boss: "Magmadar", pct: 85, me: false },
+    { rank: 8, name: "Tyler", spec: "Beastmaster Hunter", dps: 742, boss: "Lucifron", pct: 80, me: false }
+  ];
+  // guild-best DPS per lockout week (progression curve), top player's curve, guild avg
+  var WEEKS = ["W1","W2","W3","W4","W5","W6","W7","W8"];
+  var GUILD = [402, 455, 521, 548, 601, 633, 682, 741];
+  var TOPP  = [511, 588, 640, 702, 715, 748, 806, 923];
+  var AVGP  = [388, 421, 470, 496, 530, 552, 589, 634];
+  var CLASSMIX = [
+    { label: "Warrior", n: 14, color: "#c79c6e" }, { label: "Mage", n: 11, color: "#69ccf0" },
+    { label: "Rogue", n: 10, color: "#fff569" }, { label: "Shaman", n: 9, color: "#0070dd" },
+    { label: "Hunter", n: 8, color: "#abd473" }, { label: "Warlock", n: 7, color: "#9482c9" },
+    { label: "Priest", n: 7, color: "#ffffff" }, { label: "Paladin", n: 5, color: "#f58cba" },
+    { label: "Druid", n: 4, color: "#ff7d0a" }
+  ];
+
+  var views = ["leaderboard", "bosses", "progress"];
+  var active = "leaderboard";
+  var chipsEl = document.getElementById("chips");
+  var leftEl = document.getElementById("left");
+  var rightEl = document.getElementById("right");
+
+  function renderChips() {
+    chipsEl.innerHTML = "";
+    views.forEach(function (v) {
+      var b = document.createElement("button");
+      b.className = "chip" + (active === v ? " on" : "");
+      b.textContent = v;
+      b.addEventListener("click", function () { active = v; render(); });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  function bar(pct) { return "<div class='bar'><i style='width:" + pct + "%'></i></div>"; }
+
+  function renderLeaderboard() {
+    var rows = LEADERS.map(function (p) {
+      return "<tr" + (p.me ? " class='me'" : "") + "><td><span class='rank r" + p.rank + "'>" + p.rank + "</span></td>" +
+        "<td><b>" + p.name + "</b><br><span style='font-size:10.5px;color:var(--muted-foreground,#8b8b8b)'>" + p.spec + "</span></td>" +
+        "<td class='n'><b>" + p.dps + "</b></td><td class='n'>" + p.boss + "</td>" +
+        "<td style='width:35%'>" + bar(p.pct) + "</td></tr>";
+    }).join("");
+    leftEl.innerHTML = "<h2>Guild DPS leaderboard — best single kill</h2><table>" +
+      "<tr><th>#</th><th>player</th><th class='n'>best</th><th>on</th><th></th></tr>" + rows + "</table>";
+    rightEl.innerHTML = "<h2>Class mix — raiders by class</h2>" + donut(CLASSMIX) +
+      "<div class='lgnd'>" + CLASSMIX.map(function (c) { return "<span><i class='dot' style='background:" + c.color + "'></i>" + c.label + " " + c.n + "</span>"; }).join("") + "</div>";
+  }
+
+  function renderBosses() {
+    var rows = BOSSES.map(function (b) {
+      var dpsCell = b.kills ? "<td class='n'><b>" + b.best + "</b></td><td class='n'>" + b.avg + "</td>" : "<td class='n'>—</td><td class='n'>—</td>";
+      var fast = b.kills ? b.fastestMin.toFixed(1) + " min" : "—";
+      return "<tr><td><b>" + b.name + "</b></td><td class='n'>" + b.kills + "</td>" + dpsCell +
+        "<td class='n'>" + fast + "</td><td style='width:30%'>" + bar(Math.round(b.kills / 41 * 100)) + "</td></tr>";
+    }).join("");
+    leftEl.innerHTML = "<h2>Bosses — kills, best / avg DPS, fastest kill</h2><table>" +
+      "<tr><th>boss</th><th class='n'>kills</th><th class='n'>best</th><th class='n'>avg</th><th class='n'>fastest</th><th></th></tr>" + rows + "</table>";
+    rightEl.innerHTML = "<h2>Best kill DPS per boss</h2>" + bars(BOSSES.filter(function (b) { return b.kills; }), function (b) { return b.best; });
+  }
+
+  function renderProgress() {
+    leftEl.innerHTML = "<h2>Progression — guild best / top player / raid avg</h2>" + line();
+    rightEl.innerHTML = "<h2>Growth week over week</h2><table>" +
+      "<tr><th>week</th><th class='n'>guild best</th><th class='n'>Δ</th><th class='n'>top</th><th class='n'>avg</th></tr>" +
+      WEEKS.map(function (w, i) {
+        var d = i ? "+" + (GUILD[i] - GUILD[i - 1]) : "—";
+        return "<tr><td>" + w + "</td><td class='n'><b>" + GUILD[i] + "</b></td><td class='n'>" + d + "</td><td class='n'>" + TOPP[i] + "</td><td class='n'>" + AVGP[i] + "</td></tr>";
+      }).join("") + "</table>";
+  }
+
+  // ---- tiny inline charts (no libs) ----
+  function line() {
+    var W = 460, H = 190, L = 34, R = 8, T = 12, B = 22;
+    var maxY = 1000;
+    function pt(arr, i) {
+      var x = L + (W - L - R) * (i / (arr.length - 1));
+      var y = T + (H - T - B) * (1 - arr[i] / maxY);
+      return [x, y];
+    }
+    function path(arr) { return arr.map(function (_, i) { return (i ? "L" : "M") + pt(arr, i).map(function (v) { return v.toFixed(1); }).join(" "); }).join(" "); }
+    var grid = "";
+    for (var y = 0; y <= 1000; y += 250) {
+      var gy = T + (H - T - B) * (1 - y / maxY);
+      grid += "<line x1='" + L + "' y1='" + gy + "' x2='" + (W - R) + "' y2='" + gy + "' stroke='var(--border,#2b2b2b)'/>" +
+              "<text x='" + (L - 6) + "' y='" + (gy + 3) + "' text-anchor='end' font-size='9' fill='var(--muted-foreground,#8b8b8b)'>" + y + "</text>";
+    }
+    var xlabels = WEEKS.map(function (w, i) {
+      var x = pt(GUILD, i)[0];
+      return "<text x='" + x + "' y='" + (H - 6) + "' text-anchor='middle' font-size='9' fill='var(--muted-foreground,#8b8b8b)'>" + w + "</text>";
+    }).join("");
+    var dots = GUILD.map(function (_, i) {
+      var g = pt(GUILD, i), t = pt(TOPP, i);
+      return "<circle cx='" + g[0] + "' cy='" + g[1] + "' r='2.5' fill='#e0b055'/>" +
+             "<circle cx='" + t[0] + "' cy='" + t[1] + "' r='2.5' fill='#e07b55'/>";
+    }).join("");
+    return "<svg viewBox='0 0 " + W + " " + H + "'>" + grid +
+      "<path d='" + path(GUILD) + "' fill='none' stroke='#e0b055' stroke-width='2'/>" +
+      "<path d='" + path(TOPP) + "' fill='none' stroke='#e07b55' stroke-width='2' stroke-dasharray='1 0'/>" +
+      "<path d='" + path(AVGP) + "' fill='none' stroke='#7f8fa6' stroke-width='1.6' stroke-dasharray='4 3'/>" +
+      dots + xlabels + "</svg>" +
+      "<div class='lgnd'><span><i class='dot' style='background:#e0b055'></i>guild best</span>" +
+      "<span><i class='dot' style='background:#e07b55'></i>top player</span>" +
+      "<span><i class='dot' style='background:#7f8fa6'></i>raid avg</span></div>";
+  }
+
+  function bars(arr, val) {
+    var W = 340, rowH = 22, L = 90;
+    var max = Math.max.apply(null, arr.map(val));
+    var rowsSvg = arr.map(function (b, i) {
+      var y = i * rowH + 4;
+      var w = (W - L - 8) * (val(b) / max);
+      return "<text x='" + (L - 6) + "' y='" + (y + 11) + "' text-anchor='end' font-size='10' fill='var(--muted-foreground,#8b8b8b)'>" + b.name + "</text>" +
+        "<rect x='" + L + "' y='" + y + "' width='" + w.toFixed(1) + "' height='14' rx='3' fill='url(#g)'/>" +
+        "<text x='" + (L + w + 4) + "' y='" + (y + 11) + "' font-size='10' fill='var(--foreground,#e7e7e5)'>" + val(b) + "</text>";
+    }).join("");
+    return "<svg viewBox='0 0 " + W + " " + (arr.length * rowH + 8) + "'><defs>" +
+      "<linearGradient id='g' x1='0' y1='0' x2='1' y2='0'><stop offset='0' stop-color='#e0b055'/><stop offset='1' stop-color='#e07b55'/></linearGradient>" +
+      "</defs>" + rowsSvg + "</svg>";
+  }
+
+  function donut(parts) {
+    var total = parts.reduce(function (s, p) { return s + p.n; }, 0);
+    var cx = 100, cy = 100, r = 78, sw = 26, a = -Math.PI / 2, arcs = "";
+    parts.forEach(function (p) {
+      var a2 = a + 2 * Math.PI * (p.n / total);
+      var large = a2 - a > Math.PI ? 1 : 0;
+      var x1 = cx + r * Math.cos(a), y1 = cy + r * Math.sin(a);
+      var x2 = cx + r * Math.cos(a2), y2 = cy + r * Math.sin(a2);
+      arcs += "<path d='M" + x1.toFixed(1) + " " + y1.toFixed(1) + " A" + r + " " + r + " 0 " + large + " 1 " + x2.toFixed(1) + " " + y2.toFixed(1) + "' stroke='" + p.color + "' stroke-width='" + sw + "' fill='none'/>";
+      a = a2;
+    });
+    return "<svg viewBox='0 0 200 200' style='max-width:210px;margin:0 auto'>" + arcs +
+      "<text x='100' y='97' text-anchor='middle' font-size='22' font-weight='700' fill='var(--foreground,#e7e7e5)'>" + total + "</text>" +
+      "<text x='100' y='114' text-anchor='middle' font-size='9' fill='var(--muted-foreground,#8b8b8b)'>RAIDERS</text></svg>";
+  }
+
+  function render() {
+    renderChips();
+    if (active === "leaderboard") renderLeaderboard();
+    else if (active === "bosses") renderBosses();
+    else renderProgress();
+  }
+  render();
+  document.getElementById("foot").textContent =
+    "Illustrative for presentation — live board streams WCL rankings + kill records + sim ceilings, updated after every raid.";
+})();
+</script>
+</body>
+</html>

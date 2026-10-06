@@ -1,0 +1,122 @@
+.sim-header {
+	position: sticky;
+	top: -1px;
+	height: var(--sim-header-height);
+	padding-top: var(--gap-width);
+	padding-left: var(--container-padding);
+	padding-right: var(--container-padding);
+	margin-left: calc(-1 * var(--container-padding));
+	margin-right: calc(-1 * var(--container-padding));
+	white-space: nowrap;
+	transition: background-color 0.15s ease-in-out;
+	z-index: var(--header-z-index);
+
+	@include media-breakpoint-down(lg) {
+		padding-top: var(--gap-width-sm);
+	}
+
+	&::after {
+		content: ' ';
+		position: absolute;
+		bottom: -1px;
+		left: 0;
+		right: 0;
+		width: calc(100% - 2 * var(--container-padding));
+		height: 1px;
+		margin-left: auto;
+		margin-right: auto;
+		background-color: var(--bs-border-color);
+		transition: width 0.15s ease-in-out;
+	}
+
+	&.stuck {
+		background: var(--bs-body-bg);
+
+		&::after {
+			width: 100%;
+		}
+	}
+
+	.sim-header-container {
+		height: 100%;
+		display: flex;
+		align-items: stretch;
+		flex: 1;
+		// Horizontal scroll for smaller screens
+		// TODO: This is not a good solution
+		overflow-x: scroll;
+		-ms-overflow-style: none; /* IE and Edge */
+		scrollbar-width: none; /* Firefox */
+
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	.sim-tabs,
+	.import-export,
+	.sim-toolbar {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: flex-end;
+		font-weight: bold;
+	}
+
+	.sim-tabs {
+		border-bottom: 0;
+	}
+
+	.import-export {
+		.import-link,
+		.export-link {
+			padding: $nav-link-padding-y $nav-link-padding-x;
+			font-size: $nav-link-font-size;
+			transition: $nav-link-transition;
+
+			&.show {
+				color: var(--bs-white);
+			}
+		}
+	}
+
+	.sim-toolbar {
+		margin-left: auto;
+		font-size: var(--content-font-size);
+
+		.sim-toolbar-item,
+		.sim-toolbar-socials {
+			margin-left: var(--spacer-3);
+			display: flex;
+
+			a {
+				margin-top: $nav-link-padding-y;
+				margin-bottom: $nav-link-padding-y;
+			}
+		}
+
+		.sim-toolbar-item {
+			transition: var(--link-transition);
+		}
+
+		.sim-toolbar-socials {
+			margin-top: calc($nav-link-padding-y / 2);
+			margin-bottom: calc($nav-link-padding-y / 2);
+			border-left: var(--border-default);
+
+			a {
+				margin-top: calc($nav-link-padding-y / 2);
+				margin-bottom: calc($nav-link-padding-y / 2);
+			}
+		}
+	}
+
+	.sim-dropdown-menu {
+		display: flex;
+		// Needed so that dropdowns don't clip the header with overflow-x set
+		position: unset;
+
+		.dropdown-menu {
+			top: -2px;
+		}
+	}
+}

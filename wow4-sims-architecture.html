@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WoW4_SiMs Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { margin-bottom: 2rem; }
+    .header-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+    .pulse-dot { width: 12px; height: 12px; background: #22d3ee; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    .subtitle { color: #94a3b8; font-size: 0.875rem; margin-left: 1.75rem; }
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+    .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+    .card h3 { font-size: 0.875rem; font-weight: 600; }
+    .card ul { list-style: none; color: #94a3b8; font-size: 0.75rem; }
+    .card li { margin-bottom: 0.375rem; }
+    .card .warn { color: #fbbf24; }
+    .card .ok { color: #34d399; }
+    .card .block { color: #fb7185; }
+    .footer { text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>WoW4_SiMs &mdash; World of Warcraft Forever Simulator</h1>
+      </div>
+      <p class="subtitle">WoWSims Classic engine fork &bull; Go WASM combat core + Vite/TypeScript UI &bull; 5-agent research in flight</p>
+    </div>
+
+    <div class="diagram-container">
+      <svg viewBox="0 0 1000 860">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee"/>
+          </marker>
+          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+          </marker>
+          <marker id="arrow-amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24"/>
+          </marker>
+          <marker id="arrow-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa"/>
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+
+        <!-- ============================================================
+             ARROWS (drawn early so they render behind components)
+             ============================================================ -->
+
+        <!-- Wago DB2 -> gen_db -->
+        <line x1="180" y1="100" x2="260" y2="148" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="195" y="128" fill="#94a3b8" font-size="8">CSV tables</text>
+
+        <!-- Wowhead -> gen_db -->
+        <line x1="450" y1="100" x2="370" y2="148" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="400" y="120" fill="#94a3b8" font-size="8">gear-planner</text>
+
+        <!-- Wowhead -> Gear Planner DB (direct) -->
+        <line x1="530" y1="100" x2="545" y2="258" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-amber)"/>
+        <text x="555" y="190" fill="#94a3b8" font-size="8">tooltips</text>
+
+        <!-- gen_db -> assets/database -->
+        <line x1="230" y1="210" x2="230" y2="258" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+        <text x="240" y="238" fill="#94a3b8" font-size="8">gen_db</text>
+
+        <!-- gen_db -> Gear Planner DB -->
+        <line x1="350" y1="210" x2="500" y2="258" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+
+        <!-- assets/database -> WASM Core (compiled in) -->
+        <line x1="230" y1="340" x2="280" y2="388" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="210" y="370" fill="#94a3b8" font-size="8">compiled in</text>
+
+        <!-- Gear Planner DB -> Frontend (generated TS asset) -->
+        <line x1="545" y1="340" x2="350" y2="518" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-cyan)"/>
+        <text x="440" y="430" fill="#22d3ee" font-size="8">generated TS asset</text>
+
+        <!-- WASM Core -> Frontend (WebAssembly) -->
+        <line x1="350" y1="470" x2="250" y2="518" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="260" y="500" fill="#94a3b8" font-size="8">WebAssembly</text>
+
+        <!-- Frontend -> dist/forever/ -->
+        <line x1="450" y1="570" x2="548" y2="550" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+        <text x="490" y="555" fill="#94a3b8" font-size="8">build</text>
+
+        <!-- ============================================================
+             ROW 1: EXTERNAL DATA SOURCES (slate)
+             ============================================================ -->
+
+        <!-- Wago DB2 -->
+        <rect x="50" y="30" width="260" height="70" rx="6" fill="#0f172a"/>
+        <rect x="50" y="30" width="260" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="180" y="55" fill="white" font-size="12" font-weight="600" text-anchor="middle">Wago DB2</text>
+        <text x="180" y="72" fill="#94a3b8" font-size="9" text-anchor="middle">wago.tools/db2 &bull; build 5.5.4.69934</text>
+        <text x="180" y="86" fill="#94a3b8" font-size="8" text-anchor="middle">ItemSparse, SpellName, ItemSet, Enchant</text>
+
+        <!-- Wowhead Nether -->
+        <rect x="370" y="30" width="260" height="70" rx="6" fill="#0f172a"/>
+        <rect x="370" y="30" width="260" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="500" y="55" fill="white" font-size="12" font-weight="600" text-anchor="middle">Wowhead Nether</text>
+        <text x="500" y="72" fill="#94a3b8" font-size="9" text-anchor="middle">nether.wowhead.com/forever</text>
+        <text x="500" y="86" fill="#94a3b8" font-size="8" text-anchor="middle">gear-planner (11,239 items) + item/spell tooltips</text>
+
+        <!-- Blizzard / Community -->
+        <rect x="690" y="30" width="260" height="70" rx="6" fill="#0f172a"/>
+        <rect x="690" y="30" width="260" height="70" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="820" y="55" fill="white" font-size="12" font-weight="600" text-anchor="middle">Blizzard / Community</text>
+        <text x="820" y="72" fill="#94a3b8" font-size="9" text-anchor="middle">official announcements + patch notes</text>
+        <text x="820" y="86" fill="#94a3b8" font-size="8" text-anchor="middle">combat model, talent row, paladin deep-dive</text>
+
+        <!-- ============================================================
+             ROW 2: INGESTION LAYER
+             ============================================================ -->
+
+        <!-- gen_db Go tools -->
+        <rect x="100" y="150" width="300" height="60" rx="6" fill="#0f172a"/>
+        <rect x="100" y="150" width="300" height="60" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="250" y="175" fill="white" font-size="12" font-weight="600" text-anchor="middle">gen_db Ingestion Tools</text>
+        <text x="250" y="195" fill="#94a3b8" font-size="9" text-anchor="middle">Go &bull; tools/database/gen_db/ &bull; CSV parsers + DB generators</text>
+
+        <!-- Knowledge Base -->
+        <rect x="500" y="150" width="250" height="60" rx="6" fill="#0f172a"/>
+        <rect x="500" y="150" width="250" height="60" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="625" y="175" fill="white" font-size="12" font-weight="600" text-anchor="middle">Knowledge Base</text>
+        <text x="625" y="195" fill="#94a3b8" font-size="9" text-anchor="middle">sourced facts &bull; 9 class files &bull; 7 systems &bull; SoD-vs-Forever</text>
+
+        <!-- ============================================================
+             ROW 3: DATA ASSETS
+             ============================================================ -->
+
+        <!-- assets/database -->
+        <rect x="100" y="260" width="260" height="80" rx="6" fill="#0f172a"/>
+        <rect x="100" y="260" width="260" height="80" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="230" y="285" fill="white" font-size="12" font-weight="600" text-anchor="middle">assets/database</text>
+        <text x="230" y="303" fill="#94a3b8" font-size="9" text-anchor="middle">items, spells, talents, sets, enchants</text>
+        <text x="230" y="320" fill="#94a3b8" font-size="8" text-anchor="middle">compiled into WASM core at build time</text>
+        <!-- Status: amber -->
+        <text x="230" y="335" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">&#9888; 1.12-scale &mdash; Forever regen pending</text>
+
+        <!-- Gear Planner DB -->
+        <rect x="420" y="260" width="260" height="80" rx="6" fill="#0f172a"/>
+        <rect x="420" y="260" width="260" height="80" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="550" y="285" fill="white" font-size="12" font-weight="600" text-anchor="middle">Gear Planner Database</text>
+        <text x="550" y="303" fill="#94a3b8" font-size="9" text-anchor="middle">11,239 items &bull; 1,913 epic+ &bull; set/proc data</text>
+        <text x="550" y="320" fill="#94a3b8" font-size="8" text-anchor="middle">versionNum 16001 &bull; Skyborne items present</text>
+        <!-- Status: green -->
+        <text x="550" y="335" fill="#34d399" font-size="8" text-anchor="middle" font-weight="600">&#10003; confirmed live &bull; pullable now</text>
+
+        <!-- ============================================================
+             ROW 4: SIM ENGINE
+             ============================================================ -->
+
+        <!-- Go WASM Combat Core -->
+        <rect x="100" y="390" width="580" height="80" rx="6" fill="#0f172a"/>
+        <rect x="100" y="390" width="580" height="80" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="390" y="415" fill="white" font-size="13" font-weight="600" text-anchor="middle">Go WASM Combat Engine</text>
+        <text x="390" y="435" fill="#94a3b8" font-size="9" text-anchor="middle">19/19 spec agents &bull; APL rotation engine &bull; raid sim &bull; threat/GCD/crit model</text>
+        <text x="390" y="452" fill="#94a3b8" font-size="8" text-anchor="middle">wowsimcli.exe (CLI) + lib.wasm 35.5 MB (browser) &bull; go build ./sim/ ./sim/*/...</text>
+        <!-- Status: green + amber -->
+        <text x="390" y="465" fill="#34d399" font-size="8" text-anchor="middle" font-weight="600">&#10003; all 19 specs implemented</text>
+        <text x="590" y="465" fill="#fbbf24" font-size="8" font-weight="600">&#9888; values are 1.12-scale</text>
+
+        <!-- ============================================================
+             ROW 5: FRONTEND
+             ============================================================ -->
+
+        <!-- Vite + TypeScript UI -->
+        <rect x="50" y="520" width="400" height="100" rx="8" fill="#0f172a"/>
+        <rect x="50" y="520" width="400" height="100" rx="8" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="250" y="545" fill="white" font-size="13" font-weight="600" text-anchor="middle">Vite + TypeScript Frontend</text>
+        <text x="250" y="565" fill="#94a3b8" font-size="9" text-anchor="middle">19 spec pages &bull; gear DB integration &bull; APL rotation editor</text>
+        <text x="250" y="580" fill="#94a3b8" font-size="9" text-anchor="middle">talent import/export &bull; raid sim &bull; result charts</text>
+        <text x="250" y="595" fill="#94a3b8" font-size="9" text-anchor="middle">dynamic imports per spec &bull; WASM loaded once</text>
+        <!-- Status -->
+        <text x="250" y="612" fill="#22d3ee" font-size="8" text-anchor="middle" font-weight="600">ui/&lt;spec&gt;/ dirs &bull; vite.config.mts &bull; package.json</text>
+
+        <!-- dist/forever/ -->
+        <rect x="520" y="520" width="250" height="60" rx="6" fill="#0f172a"/>
+        <rect x="520" y="520" width="250" height="60" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="645" y="545" fill="white" font-size="12" font-weight="600" text-anchor="middle">dist/forever/</text>
+        <text x="645" y="562" fill="#94a3b8" font-size="9" text-anchor="middle">built output &bull; static assets</text>
+        <!-- Status: amber -->
+        <text x="645" y="575" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">&#9888; BUILD PENDING &mdash; protoc-gen-ts fix</text>
+
+        <!-- ============================================================
+             ROW 6: COMPANION PROJECTS
+             ============================================================ -->
+
+        <!-- wow-forever map -->
+        <rect x="50" y="670" width="250" height="60" rx="6" fill="#0f172a"/>
+        <rect x="50" y="670" width="250" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="175" y="695" fill="white" font-size="12" font-weight="600" text-anchor="middle">wow-forever Map</text>
+        <text x="175" y="712" fill="#94a3b8" font-size="9" text-anchor="middle">offline world map &bull; 9,288 tiles &bull; quest log</text>
+        <text x="175" y="725" fill="#34d399" font-size="8" text-anchor="middle">&#10003; done</text>
+
+        <!-- Guild sync addon -->
+        <rect x="350" y="670" width="250" height="60" rx="6" fill="#0f172a"/>
+        <rect x="350" y="670" width="250" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="475" y="695" fill="white" font-size="12" font-weight="600" text-anchor="middle">Guild Sync Addon</text>
+        <text x="475" y="712" fill="#94a3b8" font-size="9" text-anchor="middle">Lua addon + Python companion pipe</text>
+        <text x="475" y="725" fill="#34d399" font-size="8" text-anchor="middle">&#10003; Plan A shipped v0.1.0</text>
+
+        <!-- 5-Agent Research -->
+        <rect x="650" y="670" width="250" height="60" rx="6" fill="#0f172a"/>
+        <rect x="650" y="670" width="250" height="60" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="775" y="695" fill="white" font-size="12" font-weight="600" text-anchor="middle">5-Agent Research</text>
+        <text x="775" y="712" fill="#94a3b8" font-size="9" text-anchor="middle">data inventory &bull; competitors &bull; official facts</text>
+        <text x="775" y="725" fill="#fbbf24" font-size="8" text-anchor="middle" font-weight="600">&#9679; in flight &mdash; results pending</text>
+
+        <!-- ============================================================
+             LEGEND
+             ============================================================ -->
+        <text x="50" y="775" fill="white" font-size="10" font-weight="600">Legend</text>
+
+        <rect x="50" y="788" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
+        <text x="74" y="796" fill="#94a3b8" font-size="8">Frontend</text>
+
+        <rect x="50" y="804" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
+        <text x="74" y="812" fill="#94a3b8" font-size="8">Backend / Engine</text>
+
+        <rect x="50" y="820" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
+        <text x="74" y="828" fill="#94a3b8" font-size="8">Data / Database</text>
+
+        <rect x="50" y="836" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
+        <text x="74" y="844" fill="#94a3b8" font-size="8">Build / In Progress</text>
+
+        <rect x="50" y="852" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
+        <text x="74" y="860" fill="#94a3b8" font-size="8">External / Companion</text>
+
+        <line x1="200" y1="792" x2="220" y2="792" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-amber)"/>
+        <text x="226" y="796" fill="#94a3b8" font-size="8">Data flow (external)</text>
+
+        <line x1="200" y1="808" x2="220" y2="808" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+        <text x="226" y="812" fill="#94a3b8" font-size="8">Data flow (internal)</text>
+
+        <line x1="200" y1="824" x2="220" y2="824" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="226" y="828" fill="#94a3b8" font-size="8">Engine flow</text>
+
+        <line x1="200" y1="840" x2="220" y2="840" stroke="#22d3ee" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-cyan)"/>
+        <text x="226" y="844" fill="#94a3b8" font-size="8">Generated asset</text>
+
+        <!-- Status summary strip -->
+        <text x="400" y="782" fill="#34d399" font-size="9" font-weight="600">&#10003; WASM core built (35.5 MB) &bull; 19/19 specs &bull; Map done &bull; Gear DB live (11,239 items)</text>
+        <text x="400" y="800" fill="#fbbf24" font-size="9" font-weight="600">&#9888; assets/database = 1.12-scale &bull; dist/ PENDING (protoc-gen-ts) &bull; Browser not verified</text>
+        <text x="400" y="818" fill="#fb7185" font-size="9" font-weight="600">&#10007; node_modules was missing (npm install pending) &bull; Firecrawl unavailable (using direct HTTP)</text>
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>Working</h3>
+        </div>
+        <ul>
+          <li class="ok">&#10003; Go WASM combat core &mdash; 35.5 MB, magic 0061736d</li>
+          <li class="ok">&#10003; All 19 spec agents implemented &amp; verified</li>
+          <li class="ok">&#10003; wow-forever offline map &mdash; 9,288 tiles, quest log</li>
+          <li class="ok">&#10003; Knowledge base &mdash; 9 classes, 7 systems, SoD-vs-Forever</li>
+          <li class="ok">&#10003; Gear-planner feed confirmed: 11,239 items, 1,913 epic+</li>
+          <li class="ok">&#10003; Wago DB2 + Wowhead Nether both reachable</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>In Progress</h3>
+        </div>
+        <ul>
+          <li class="warn">&#9888; assets/database still 1.12-scale &mdash; needs Forever regen</li>
+          <li class="warn">&#9888; dist/forever/ not built &mdash; protoc-gen-ts PATH fix queued</li>
+          <li class="warn">&#9888; node_modules missing &mdash; npm install in flight</li>
+          <li class="warn">&#9888; Wago build number stale in docs (1.60.1 &rarr; 5.5.4.69934)</li>
+          <li class="warn">&#9679; 5 research agents in flight (data, competitors, official, frontend)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>Blocked / Known Gaps</h3>
+        </div>
+        <ul>
+          <li class="block">&#10007; Browser runtime never visually verified (local backend hangs)</li>
+          <li class="block">&#10007; Full talent trees unknown (nether data/talents returns empty)</li>
+          <li class="block">&#10007; 59 SoD item-set bonuses + weapon procs not yet sourced</li>
+          <li class="block">&#10007; Firecrawl unavailable &mdash; using direct HTTP + web_search</li>
+          <li class="block">&#10007; All combat values are 1.12-scale, not Forever coefficients</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer">
+      WoW4_SiMs &bull; E:\WoW4_SiMs &bull; upstream-classic fork &bull; Go 1.27 + Vite/TS + WASM &bull; 2026-09-28
+    </p>
+  </div>
+</body>
+</html>

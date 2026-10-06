@@ -1,0 +1,103 @@
+{
+    "type": "TypeAPL",
+    "priorityList": [
+        {
+            "action": {
+                "autocastOtherCooldowns": {}
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                            "spellCpm": {
+                                "spellId": {
+                                    "spellId": 25314
+                                }
+                            }
+                        },
+                        "rhs": {
+                            "const": {
+                                "val": "10"
+                            }
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 25314
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                            "spellCpm": {
+                                "spellId": {
+                                    "spellId": 10917
+                                }
+                            }
+                        },
+                        "rhs": {
+                            "const": {
+                                "val": "5"
+                            }
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 10917
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "multidot": {
+                    "spellId": {
+                        "spellId": 25315
+                    },
+                    "maxDots": 5,
+                    "maxOverlap": {
+                        "const": {
+                            "val": "0ms"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                            "spellCpm": {
+                                "spellId": {
+                                    "spellId": 10961
+                                }
+                            }
+                        },
+                        "rhs": {
+                            "const": {
+                                "val": "2"
+                            }
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 10961
+                    }
+                }
+            }
+        }
+    ]
+}

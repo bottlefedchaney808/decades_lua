@@ -1,0 +1,108 @@
+{
+    "type": "TypeAPL",
+    "prepullActions": [
+        {
+            "action": {
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 22812
+                    }
+                }
+            },
+            "doAtValue": {
+                "const": {
+                    "val": "-1s"
+                }
+            }
+        }
+    ],
+    "priorityList": [
+        {
+            "action": {
+                "condition": {
+                    "not": {
+                        "val": {
+                            "auraIsActive": {
+                                "auraId": {
+                                    "spellId": 48560
+                                }
+                            }
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 48560
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "and": {
+                        "vals": [
+                            {
+                                "cmp": {
+                                    "op": "OpLt",
+                                    "lhs": {
+                                        "currentHealthPercent": {}
+                                    },
+                                    "rhs": {
+                                        "const": {
+                                            "val": "0.7"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "spellIsReady": {
+                                    "spellId": {
+                                        "spellId": 22842
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 22842
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "spellIsReady": {
+                        "spellId": {
+                            "spellId": 5229
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 5229
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "spellIsReady": {
+                        "spellId": {
+                            "spellId": 48480
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 48480
+                    }
+                }
+            }
+        }
+    ]
+}

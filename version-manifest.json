@@ -1,0 +1,33 @@
+{
+  "data_files": [
+    {
+      "path": "data/nodes.js",
+      "sha256": "ad56ca68de97b2716361e399ca2ac990000ebbd8b9f3aa665b50fe89016c343b"
+    },
+    {
+      "path": "data/places.js",
+      "sha256": "0d6647bd4f09b29004b4c4fbe556c1e8c4d42bceee58d003b73a96fe89e8628d"
+    },
+    {
+      "path": "data/pois.js",
+      "sha256": "c51bb782cf082fd6928591faf088ce3490f98791fc623637e58ab0e2632c7369"
+    },
+    {
+      "path": "data/questlog_schema.js",
+      "sha256": "467edf6a40a39f7f6fd8b55db56268110b5e69b6dad803556b94e920500d527d"
+    }
+  ],
+  "dataset_version": "20bdff7edb6563e3",
+  "manifest_format": 1,
+  "tile_packs": {
+    "eastern-kingdoms": {
+      "file_count": 3959,
+      "sha256": "d9b03cd01ec4a8ce4593091fcdb8d6a1cf6c3c52eef4195e05c78dfe09ca3d38"
+    },
+    "kalimdor": {
+      "file_count": 5329,
+      "sha256": "663daf0cdaf37436efd01b44209f880b6ba64d2f7e84152ac1aa67037985750a"
+    }
+  },
+  "wowhead_data_version": 14
+}

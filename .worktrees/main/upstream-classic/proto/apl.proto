@@ -1,0 +1,541 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "common.proto";
+import "shaman.proto";
+
+// Rotation options are based heavily on APL. See https://github.com/simulationcraft/simc/wiki/ActionLists.
+
+message APLRotation {
+    enum Type {
+        TypeUnknown = 0;
+        TypeAuto = 1;
+        TypeSimple = 2;
+        TypeAPL = 3;
+        TypeLegacy = 4;
+    }
+    Type type = 3;
+
+    SimpleRotation simple = 4;
+
+	repeated APLPrepullAction prepull_actions = 1;
+	repeated APLListItem priority_list = 2;
+}
+
+message SimpleRotation {
+    string spec_rotation_json = 1;
+	Cooldowns cooldowns = 2;
+}
+
+message APLPrepullAction {
+    APLAction action = 1;
+    APLValue do_at_value = 4; // When to perform this prepull action. Should be a negative value.
+    bool hide = 3;            // Causes this item to be ignored.
+}
+
+message APLListItem {
+    bool hide = 1;        // Causes this item to be ignored.
+    string notes = 2;     // Comments for the reader.
+    APLAction action = 3; // The action to be performed.
+}
+
+// NextIndex: 24
+message APLAction {
+    APLValue condition = 1; // If set, action will only execute if value is true or != 0.
+
+    oneof action {
+        // Casting
+        APLActionCastSpell cast_spell = 3;
+        APLActionChannelSpell channel_spell = 16;
+        APLActionMultidot multidot = 8;
+        APLActionMultishield multishield = 12;
+        APLActionAutocastOtherCooldowns autocast_other_cooldowns = 7;
+
+        // Timing
+        APLActionWait wait = 4;
+        APLActionWaitUntil wait_until = 14;
+        APLActionSchedule schedule = 15;
+
+        // Sequences
+        APLActionSequence sequence = 2;
+        APLActionResetSequence reset_sequence = 5;
+        APLActionStrictSequence strict_sequence = 6;
+
+        // Misc
+        APLActionChangeTarget change_target = 9;
+        APLActionActivateAura activate_aura = 13;
+        APLActionActivateAuraWithStacks activate_aura_with_stacks = 22;
+        APLActionCancelAura cancel_aura = 10;
+        APLActionTriggerICD trigger_icd = 11;
+        APLActionItemSwap item_swap = 17;
+        APLActionMove move = 18;
+        APLActionAddComboPoints add_combo_points = 23;
+
+        // Class or Spec-specific actions
+        APLActionCatOptimalRotationAction cat_optimal_rotation_action = 19;
+        APLActionCastPaladinPrimarySeal cast_paladin_primary_seal = 21;
+
+        // Internal use only, not exposed in UI.
+        APLActionCustomRotation custom_rotation = 20;
+    }
+}
+
+// NextIndex: 78
+message APLValue {
+    oneof value {
+        // Operators
+        APLValueConst const = 1;
+        APLValueAnd and = 2;
+        APLValueOr or = 3;
+        APLValueNot not = 4;
+        APLValueCompare cmp = 5;
+        APLValueMath math = 38;
+        APLValueMax max = 47;
+        APLValueMin min = 48;
+
+        // Encounter values
+        APLValueCurrentTime current_time = 7;
+        APLValueCurrentTimePercent current_time_percent = 8;
+        APLValueRemainingTime remaining_time = 9;
+        APLValueRemainingTimePercent remaining_time_percent = 10;
+        APLValueIsExecutePhase is_execute_phase = 41;
+        APLValueNumberTargets number_targets = 28;
+
+        // Resource values
+        APLValueCurrentHealth current_health = 26;
+        APLValueCurrentHealthPercent current_health_percent = 27;
+        APLValueMaxHealth max_health = 76;
+        APLValueCurrentMana current_mana = 11;
+        APLValueCurrentManaPercent current_mana_percent = 12;
+        APLValueMaxMana max_mana = 75;
+        APLValueCurrentRage current_rage = 14;
+        APLValueCurrentEnergy current_energy = 15;
+        APLValueCurrentComboPoints current_combo_points = 16;
+        APLValueTimeToEnergyTick time_to_energy_tick = 66;
+        APLValueEnergyThreshold energy_threshold = 72;
+        
+        // Stats
+        APLValueCurrentAttackPower current_attack_power = 77;
+
+        // GCD values
+        APLValueGCDIsReady gcd_is_ready = 17;
+        APLValueGCDTimeToReady gcd_time_to_ready = 18;
+
+        // Autoattack values
+        APLValueAutoTimeToNext auto_time_to_next = 40;
+        APLValueAutoSwingTime auto_swing_time = 64;
+
+        // Spell values
+        APLValueSpellIsKnown spell_is_known = 68;
+        APLValueSpellCanCast spell_can_cast = 19;
+        APLValueSpellIsReady spell_is_ready = 20;
+        APLValueSpellTimeToReady spell_time_to_ready = 21;
+        APLValueSpellCastTime spell_cast_time = 35;
+        APLValueSpellTravelTime spell_travel_time = 37;
+        APLValueSpellInFlight spell_in_flight = 73;
+        APLValueSpellCPM spell_cpm = 42;
+        APLValueSpellIsChanneling spell_is_channeling = 56;
+        APLValueSpellChanneledTicks spell_channeled_ticks = 57;
+        APLValueSpellCurrentCost spell_current_cost = 62;
+
+        // Aura values
+        APLValueAuraIsKnown aura_is_known = 67;
+        APLValueAuraIsActive aura_is_active = 22;
+        APLValueAuraIsActiveWithReactionTime aura_is_active_with_reaction_time = 50;
+        APLValueAuraRemainingTime aura_remaining_time = 23;
+        APLValueAuraNumStacks aura_num_stacks = 24;
+        APLValueAuraInternalCooldown aura_internal_cooldown = 39;
+        APLValueAuraICDIsReadyWithReactionTime aura_icd_is_ready_with_reaction_time = 51;
+        APLValueAuraShouldRefresh aura_should_refresh = 43;
+
+        // Rune values TODO: remove once APLs for classes are updated
+        APLValueRuneIsEquipped rune_is_equipped = 74;
+
+        // Dot values
+        APLValueDotIsActive dot_is_active = 6;
+        APLValueDotRemainingTime dot_remaining_time = 13;
+
+        // Sequence values
+        APLValueSequenceIsComplete sequence_is_complete = 44;
+        APLValueSequenceIsReady sequence_is_ready = 45;
+        APLValueSequenceTimeToReady sequence_time_to_ready = 46;
+
+        // Properties
+        APLValueChannelClipDelay channel_clip_delay = 58;
+        APLValueFrontOfTarget front_of_target = 63;
+
+        // Class or Spec-specific values
+        // Shaman
+        APLValueTotemRemainingTime totem_remaining_time = 49;
+        // Druid
+        APLValueCatExcessEnergy cat_excess_energy = 52;
+        // Warlock
+        APLValueWarlockShouldRecastDrainSoul warlock_should_recast_drain_soul = 59;
+        APLValueWarlockShouldRefreshCorruption warlock_should_refresh_corruption = 60;
+        APLValueWarlockCurrentPetMana warlock_current_pet_mana = 69;
+        APLValueWarlockCurrentPetManaPercent warlock_current_pet_mana_percent = 70;
+        APLValueWarlockPetIsActive warlock_pet_is_active = 71;
+        // Paladin
+        APLValueCurrentSealRemainingTime current_seal_remaining_time = 65;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////
+//                                 ACTIONS
+///////////////////////////////////////////////////////////////////////////
+
+message APLActionCastSpell {
+    ActionID spell_id = 1;
+    UnitReference target = 2;
+}
+
+message APLActionChannelSpell {
+    ActionID spell_id = 1;
+    UnitReference target = 2;
+
+    APLValue interrupt_if = 3;
+    bool instant_interrupt = 4;
+    bool allow_recast = 5;
+}
+
+message APLActionMultidot {
+    ActionID spell_id = 1;
+    int32 max_dots = 2;
+    APLValue max_overlap = 3;
+}
+
+message APLActionMultishield {
+    ActionID spell_id = 1;
+    int32 max_shields = 2;
+    APLValue max_overlap = 3;
+}
+
+message APLActionAutocastOtherCooldowns {
+}
+
+message APLActionWait {
+    APLValue duration = 1;
+}
+
+message APLActionWaitUntil {
+    APLValue condition = 1;
+}
+
+message APLActionSchedule {
+    // Comma-separated list of times, e.g. '0s, 30s, 60s'
+    string schedule = 1;
+
+    APLAction inner_action = 2;
+}
+
+message APLActionSequence {
+    string name = 1;
+
+    repeated APLAction actions = 2;
+}
+
+message APLActionResetSequence {
+    string sequence_name = 1;
+}
+
+message APLActionStrictSequence {
+    repeated APLAction actions = 1;
+}
+
+message APLActionChangeTarget {
+    UnitReference new_target = 1;
+}
+
+message APLActionCancelAura {
+    ActionID aura_id = 1;
+}
+
+message APLActionActivateAura {
+    ActionID aura_id = 1;
+}
+
+message APLActionActivateAuraWithStacks {
+    ActionID aura_id = 1;
+    string num_stacks = 2; 
+}
+
+message APLActionAddComboPoints {
+    string num_points = 2; 
+}
+
+message APLActionTriggerICD {
+    ActionID aura_id = 1;
+}
+
+message APLActionItemSwap {
+    enum SwapSet {
+        Unknown = 0;
+        Main = 1;
+        Swap1 = 2;
+    }
+
+    // The set to swap to.
+    SwapSet swap_set = 1;
+}
+
+message APLActionCatOptimalRotationAction {
+    int32 min_combos_for_rip = 1;
+    float max_wait_time = 2;
+    bool maintain_faerie_fire = 3;
+    bool use_shred_trick = 4;
+}
+
+message APLActionCastPaladinPrimarySeal {
+}
+
+message APLActionMove {
+    APLValue range_from_target = 1;
+}
+
+message APLActionCustomRotation {
+}
+
+///////////////////////////////////////////////////////////////////////////
+//                                  VALUES
+///////////////////////////////////////////////////////////////////////////
+
+enum APLValueType {
+    ValueTypeUnknown = 0;
+    ValueTypeBool = 1;
+    ValueTypeInt = 2;
+    ValueTypeFloat = 3;
+    ValueTypeDuration = 4;
+    ValueTypeString = 5;
+}
+
+message APLValueConst {
+    string val = 1;
+}
+
+message APLValueAnd {
+    repeated APLValue vals = 1;
+}
+message APLValueOr {
+    repeated APLValue vals = 1;
+}
+message APLValueNot {
+    APLValue val = 1;
+}
+message APLValueCompare {
+    enum ComparisonOperator {
+        OpUnknown = 0;
+        OpEq = 1; // Equals
+        OpNe = 2; // Not equals
+        OpLt = 3; // Less than
+        OpLe = 4; // Less than or equal
+        OpGt = 5; // Greater than
+        OpGe = 6; // Greater than or equal
+    }
+    ComparisonOperator op = 1;
+
+    APLValue lhs = 2;
+    APLValue rhs = 3;
+}
+message APLValueMath {
+    enum MathOperator {
+        OpUnknown = 0;
+        OpAdd = 1; // Add
+        OpSub = 2; // Subtract
+        OpMul = 3; // Multiply
+        OpDiv = 4; // Divide
+    }
+    MathOperator op = 1;
+
+    APLValue lhs = 2;
+    APLValue rhs = 3;
+}
+message APLValueMax {
+    repeated APLValue vals = 1;
+}
+message APLValueMin {
+    repeated APLValue vals = 1;
+}
+
+message APLValueCurrentTime {}
+message APLValueCurrentTimePercent {}
+message APLValueRemainingTime {}
+message APLValueRemainingTimePercent {}
+message APLValueNumberTargets {}
+message APLValueIsExecutePhase {
+    enum ExecutePhaseThreshold {
+        Unknown = 0;
+        E20 = 1;
+        E25 = 2;
+        E35 = 3;
+    }
+    ExecutePhaseThreshold threshold = 1;
+}
+
+message APLValueCurrentHealth {
+    UnitReference source_unit = 1;
+}
+message APLValueCurrentHealthPercent {
+    UnitReference source_unit = 1;
+}
+message APLValueMaxHealth {}
+message APLValueCurrentMana {
+    UnitReference source_unit = 1;
+}
+message APLValueCurrentManaPercent {
+    UnitReference source_unit = 1;
+}
+message APLValueMaxMana {}
+message APLValueCurrentRage {}
+message APLValueCurrentEnergy {}
+message APLValueCurrentComboPoints {}
+message APLValueTimeToEnergyTick {}
+message APLValueEnergyThreshold {
+    int32 threshold = 1;
+}
+
+message APLValueCurrentAttackPower {}
+
+message APLValueGCDIsReady {}
+message APLValueGCDTimeToReady {}
+
+message APLValueAutoTimeToNext {
+    enum AttackType
+    {
+        Unknown = 0;
+        Any = 1;
+        Melee = 2;
+        MainHand = 3;
+        OffHand = 4;
+        Ranged = 5;
+    }
+    AttackType auto_type = 1;
+}
+
+message APLValueAutoSwingTime {
+    enum SwingType
+    {
+        Unknown = 0;
+        MainHand = 3;
+        OffHand = 4;
+        Ranged = 5;
+    }
+    SwingType auto_type = 1;
+}
+
+message APLValueSpellIsKnown {
+    ActionID spell_id = 1;
+}
+message APLValueSpellCanCast {
+    ActionID spell_id = 1;
+}
+message APLValueSpellIsReady {
+    ActionID spell_id = 1;
+}
+message APLValueSpellTimeToReady {
+    ActionID spell_id = 1;
+}
+message APLValueSpellCastTime {
+    ActionID spell_id = 1;
+}
+message APLValueChannelClipDelay {
+}
+message APLValueFrontOfTarget {
+}
+
+message APLValueSpellTravelTime {
+    ActionID spell_id = 1;
+}
+message APLValueSpellInFlight {
+    ActionID spell_id = 1;
+}
+message APLValueSpellCPM {
+    ActionID spell_id = 1;
+}
+message APLValueSpellIsChanneling {
+    ActionID spell_id = 1;
+}
+message APLValueSpellChanneledTicks {
+    ActionID spell_id = 1;
+}
+message APLValueSpellCurrentCost {
+    ActionID spell_id = 1;
+}
+
+message APLValueAuraIsKnown {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraIsActive {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraIsActiveWithReactionTime {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraRemainingTime {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraNumStacks {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraInternalCooldown {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraICDIsReadyWithReactionTime {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+}
+message APLValueAuraShouldRefresh {
+    UnitReference source_unit = 2;
+    ActionID aura_id = 1;
+    APLValue max_overlap = 3;
+}
+
+// TODO: remove once APLs for classes are updated
+message APLValueRuneIsEquipped {
+    ActionID rune_id = 1;
+}
+
+message APLValueDotIsActive {
+    UnitReference target_unit = 2;
+    ActionID spell_id = 1;
+}
+message APLValueDotRemainingTime {
+    UnitReference target_unit = 2;
+    ActionID spell_id = 1;
+}
+
+message APLValueSequenceIsComplete {
+    string sequence_name = 1;
+}
+message APLValueSequenceIsReady {
+    string sequence_name = 1;
+}
+message APLValueSequenceTimeToReady {
+    string sequence_name = 1;
+}
+
+message APLValueTotemRemainingTime {
+    ShamanTotems.TotemType totem_type = 1;
+}
+message APLValueCatExcessEnergy {
+}
+message APLValueWarlockShouldRecastDrainSoul {
+}
+message APLValueWarlockShouldRefreshCorruption {
+    UnitReference target_unit = 1;
+}
+message APLValueWarlockCurrentPetMana {
+}
+message APLValueWarlockCurrentPetManaPercent {
+}
+message APLValueWarlockPetIsActive {
+}
+message APLValueCurrentSealRemainingTime {
+}

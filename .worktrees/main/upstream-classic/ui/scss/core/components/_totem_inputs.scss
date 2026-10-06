@@ -1,0 +1,9 @@
+.totems-settings {
+	.totem-dropdowns-container {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+
+	.fire-elemental-input-container {
+		display: flex;
+	}
+}

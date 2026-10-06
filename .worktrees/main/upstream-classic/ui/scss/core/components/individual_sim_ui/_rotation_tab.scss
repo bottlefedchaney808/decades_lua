@@ -1,0 +1,91 @@
+@use 'sass:map';
+
+@import './apl_rotation_picker';
+
+#rotation-tab {
+	&.rotation-type-auto {
+		.rotation-tab-simple {
+			display: none;
+		}
+		.rotation-tab-apl {
+			display: none;
+		}
+		.rotation-tab-legacy {
+			display: none;
+		}
+	}
+
+	&.rotation-type-simple {
+		.rotation-tab-auto {
+			display: none;
+		}
+		.rotation-tab-apl {
+			display: none;
+		}
+		.rotation-tab-legacy {
+			display: none;
+		}
+	}
+
+	&.rotation-type-apl {
+		.rotation-tab-auto {
+			display: none;
+		}
+		.rotation-tab-simple {
+			display: none;
+		}
+		.rotation-tab-legacy {
+			display: none;
+		}
+	}
+
+	&.rotation-type-legacy {
+		.rotation-tab-auto {
+			display: none;
+		}
+		.rotation-tab-simple {
+			display: none;
+		}
+		.rotation-tab-apl {
+			display: none;
+		}
+
+		.enum-picker-selector,
+		.number-picker-input {
+			width: 8rem;
+		}
+	}
+
+	.rotation-tab-left {
+		flex-wrap: wrap;
+	}
+
+	.rotation-tab-header {
+		width: 100%;
+	}
+
+	.rotation-tab-auto {
+		width: 100%;
+	}
+
+	.rotation-tab-apl {
+		width: 100%;
+	}
+
+	.rotation-settings {
+		flex: 1;
+		margin-right: calc(2 * var(--spacer-3));
+	}
+
+	.cooldown-settings {
+		flex: 1;
+	}
+}
+
+@include media-breakpoint-down(md) {
+	#rotation-tab {
+		.rotation-settings {
+			margin-right: 0;
+		}
+	}
+}

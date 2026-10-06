@@ -1,0 +1,9 @@
+// Set color variables which control the site theme.
+.raid-sim-ui {
+	@include theme-color(
+		$brand,
+		.9,
+		// '/classic/assets/img/ulduar.jpg'
+		'/classic/assets/img/togc.png'
+	);
+}

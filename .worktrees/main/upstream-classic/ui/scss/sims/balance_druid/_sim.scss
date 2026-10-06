@@ -1,0 +1,8 @@
+// Set color variables which control the site theme.
+.balance-druid-sim-ui {
+	@include theme-color(
+		$druid,
+		.95,
+		'/classic/assets/img/balance_druid_background.jpg'
+	);
+}

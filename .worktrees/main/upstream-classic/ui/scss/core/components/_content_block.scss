@@ -1,0 +1,20 @@
+.content-block {
+	display: flex;
+	flex-direction: column;
+	gap: var(--block-spacer);
+
+	.content-block-header {
+		border-bottom: $border-default;
+		display: flex;
+
+		.content-block-title {
+			font-weight: bold;
+		}
+	}
+
+	.content-block-body {
+		display: flex;
+		flex-direction: column;
+		gap: var(--block-spacer);
+	}
+}

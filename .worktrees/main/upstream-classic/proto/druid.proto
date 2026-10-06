@@ -1,0 +1,116 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+import "common.proto";
+
+message DruidTalents {
+	// Balance
+	int32 improved_wrath = 1;
+	bool natures_grasp = 2;
+	int32 improved_natures_grasp = 3;
+	int32 improved_entangling_roots = 4;
+	int32 improved_moonfire = 5;
+	int32 natural_weapons = 6;
+	int32 natural_shapeshifter = 7;
+	int32 improved_thorns = 8;
+	bool omen_of_clarity = 9;
+	int32 natures_reach = 10;
+	int32 vengeance = 11;
+	int32 improved_starfire = 12;
+	bool natures_grace = 13;
+	int32 moonglow = 14;
+	int32 moonfury = 15;
+	bool moonkin_form = 16;
+
+	// Feral Combat
+	int32 ferocity = 17;
+	int32 feral_aggression = 18;
+	int32 feral_instinct = 19;
+	int32 brutal_impact = 20;
+	int32 thick_hide = 21;
+	int32 feline_swiftness = 22;
+	bool feral_charge = 23;
+	int32 sharpened_claws = 24;
+	int32 improved_shred = 25;
+	int32 predatory_strikes = 26;
+	int32 blood_frenzy = 27;
+	int32 primal_fury = 28;
+	int32 savage_fury = 29;
+	bool faerie_fire_feral = 30;
+	int32 heart_of_the_wild = 31;
+	bool leader_of_the_pack = 32;
+
+	// Restoration
+	int32 improved_mark_of_the_wild = 33;
+	int32 furor = 34;
+	int32 improved_healing_touch = 35;
+	int32 natures_focus = 36;
+	int32 improved_enrage = 37;
+	int32 reflection = 38;
+	bool insect_swarm = 39;
+	int32 subtlety = 40;
+	int32 tranquil_spirit = 41;
+	int32 improved_rejuvenation = 42;
+	bool natures_swiftness = 43;
+	int32 gift_of_nature = 44;
+	int32 improved_tranquility = 45;
+	int32 improved_regrowth = 46;
+	bool swiftmend = 47;
+}
+
+message BalanceDruid {
+  message Rotation {
+	}
+
+  message Options {
+    UnitReference innervate_target = 1;
+	float okf_uptime = 2;
+  }
+  Options options = 3;
+}
+
+message FeralDruid {
+  message Rotation {
+		bool maintain_faerie_fire = 1;
+		int32 min_combos_for_rip = 2;
+		float max_wait_time = 3;
+		float preroar_duration = 4;
+		bool precast_tigers_fury = 5;
+		bool use_shred_trick = 6;
+  }
+	Rotation rotation = 1;
+
+  message Options {
+    UnitReference innervate_target = 1;
+    int32 latency_ms = 2;
+    bool assume_bleed_active = 4;
+  }
+  Options options = 3;
+}
+
+message FeralTankDruid {
+  message Rotation {
+		// Minimum rage to queue HS or Cleave.
+		int32 maul_rage_threshold = 1;
+		bool maintain_demoralizing_roar = 2;
+		double lacerate_time = 3;
+  }
+
+  message Options {
+    UnitReference innervate_target = 1;
+		double starting_rage = 2;
+  }
+  Options options = 3;
+}
+
+message RestorationDruid {
+  message Rotation {
+  }
+
+  message Options {
+    UnitReference innervate_target = 1;
+  }
+  Options options = 3;
+}

@@ -1,0 +1,620 @@
+[
+  {
+    "name": "Holy",
+    "backgroundUrl": "https://wow.zamimg.com/images/wow/talents/backgrounds/classic/382.jpg",
+    "talents": [
+      {
+        "fieldName": "divineStrength",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20262,
+          20263,
+          20264,
+          20265,
+          20266
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "divineIntellect",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20257,
+          20258,
+          20259,
+          20260,
+          20261
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "spiritualFocus",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20205,
+          20206,
+          20207,
+          20208,
+          20209
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "improvedSealOfRighteousness",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20224,
+          20225,
+          20330,
+          20331,
+          20332
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "healingLight",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 0
+        },
+        "spellIds": [
+          20237,
+          20238,
+          20239
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "consecration",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 1
+        },
+        "spellIds": [
+          26573
+        ],
+        "maxPoints": 1
+      },
+      {
+        "fieldName": "improvedLayOnHands",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20234,
+          20235
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "unyieldingFaith",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 3
+        },
+        "spellIds": [
+          9453,
+          25836
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "illumination",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20210,
+          20212,
+          20213,
+          20214,
+          20215
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "improvedBlessingOfWisdom",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20244,
+          20245
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "divineFavor",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20216
+        ],
+        "maxPoints": 1,
+        "prereqLocation": {
+          "rowIdx": 3,
+          "colIdx": 1
+        }
+      },
+      {
+        "fieldName": "lastingJudgement",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20359,
+          20360,
+          20361
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "holyPower",
+        "location": {
+          "rowIdx": 5,
+          "colIdx": 2
+        },
+        "spellIds": [
+          5923,
+          5924,
+          5925,
+          5926,
+          25829
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "holyShock",
+        "location": {
+          "rowIdx": 6,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20473
+        ],
+        "maxPoints": 1,
+        "prereqLocation": {
+          "rowIdx": 4,
+          "colIdx": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "Protection",
+    "backgroundUrl": "https://wow.zamimg.com/images/wow/talents/backgrounds/classic/383.jpg",
+    "talents": [
+      {
+        "fieldName": "improvedDevotionAura",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20138,
+          20139,
+          20140,
+          20141,
+          20142
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "redoubt",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20127,
+          20130,
+          20135,
+          20136,
+          20137
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "precision",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 0
+        },
+        "spellIds": [
+          20189,
+          20192,
+          20193
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "guardiansFavor",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20174,
+          20175
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "toughness",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 3
+        },
+        "spellIds": [
+          20143,
+          20144,
+          20145,
+          20146,
+          20147
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "blessingOfKings",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 0
+        },
+        "spellIds": [
+          20217
+        ],
+        "maxPoints": 1
+      },
+      {
+        "fieldName": "improvedRighteousFury",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20468,
+          20469,
+          20470
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "shieldSpecialization",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20148,
+          20149,
+          20150
+        ],
+        "maxPoints": 3,
+        "prereqLocation": {
+          "rowIdx": 0,
+          "colIdx": 2
+        }
+      },
+      {
+        "fieldName": "anticipation",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 3
+        },
+        "spellIds": [
+          20096,
+          20097,
+          20098,
+          20099,
+          20100
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "improvedHammerOfJustice",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20487,
+          20488,
+          20489
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "improvedConcentrationAura",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20254,
+          20255,
+          20256
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "blessingOfSanctuary",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20911
+        ],
+        "maxPoints": 1
+      },
+      {
+        "fieldName": "reckoning",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20177,
+          20179,
+          20180,
+          20181,
+          20182
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "oneHandedWeaponSpecialization",
+        "location": {
+          "rowIdx": 5,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20196,
+          20197,
+          20198,
+          20199,
+          20200
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "holyShield",
+        "location": {
+          "rowIdx": 6,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20925
+        ],
+        "maxPoints": 1,
+        "prereqLocation": {
+          "rowIdx": 4,
+          "colIdx": 1
+        }
+      }
+    ]
+  },
+  {
+    "name": "Retribution",
+    "backgroundUrl": "https://wow.zamimg.com/images/wow/talents/backgrounds/classic/381.jpg",
+    "talents": [
+      {
+        "fieldName": "improvedBlessingOfMight",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20042,
+          20045,
+          20046,
+          20047,
+          20048
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "benediction",
+        "location": {
+          "rowIdx": 0,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20101,
+          20102,
+          20103,
+          20104,
+          20105
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "improvedJudgement",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 0
+        },
+        "spellIds": [
+          25956,
+          25957
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "improvedSealOfTheCrusader",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20335,
+          20336,
+          20337
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "deflection",
+        "location": {
+          "rowIdx": 1,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20060,
+          20061,
+          20062,
+          20063,
+          20064
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "vindication",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 0
+        },
+        "spellIds": [
+          9452,
+          26016,
+          26021
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "conviction",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20117,
+          20118,
+          20119,
+          20120,
+          20121
+        ],
+        "maxPoints": 5
+      },
+      {
+        "fieldName": "sealOfCommand",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20375
+        ],
+        "maxPoints": 1
+      },
+      {
+        "fieldName": "pursuitOfJustice",
+        "location": {
+          "rowIdx": 2,
+          "colIdx": 3
+        },
+        "spellIds": [
+          26022,
+          26023
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "eyeForAnEye",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 0
+        },
+        "spellIds": [
+          9799,
+          25988
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "improvedRetributionAura",
+        "location": {
+          "rowIdx": 3,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20091,
+          20092
+        ],
+        "maxPoints": 2
+      },
+      {
+        "fieldName": "twoHandedWeaponSpecialization",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 0
+        },
+        "spellIds": [
+          20111,
+          20112,
+          20113
+        ],
+        "maxPoints": 3
+      },
+      {
+        "fieldName": "sanctityAura",
+        "location": {
+          "rowIdx": 4,
+          "colIdx": 2
+        },
+        "spellIds": [
+          20218
+        ],
+        "maxPoints": 1
+      },
+      {
+        "fieldName": "vengeance",
+        "location": {
+          "rowIdx": 5,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20049,
+          20056,
+          20057,
+          20058,
+          20059
+        ],
+        "maxPoints": 5,
+        "prereqLocation": {
+          "rowIdx": 2,
+          "colIdx": 1
+        }
+      },
+      {
+        "fieldName": "repentance",
+        "location": {
+          "rowIdx": 6,
+          "colIdx": 1
+        },
+        "spellIds": [
+          20066
+        ],
+        "maxPoints": 1
+      }
+    ]
+  }
+]

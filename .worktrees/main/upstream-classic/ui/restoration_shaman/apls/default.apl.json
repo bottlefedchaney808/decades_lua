@@ -1,0 +1,49 @@
+{
+    "type": "TypeAPL",
+    "priorityList": [
+        {
+            "action": {
+                "autocastOtherCooldowns": {}
+            }
+        },
+        {
+            "action": {
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 331
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 1064
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 8004
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        }
+    ]
+}

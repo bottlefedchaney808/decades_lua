@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>404 - The Twisting Nether - Wowhead</title>
+    <style>
+        :root {
+            --border-width: 2px;
+            --font-family-standard: "Open Sans", Arial, "Helvetica Neue", Helvetica, sans-serif;
+            --link-color: #ffd100;
+            --link-color-hover: #fff;
+            --wh-gray-1: #181818;
+            --wh-gray-2: #202020;
+            --wh-gray-3: #303030;
+        }
+        html, body {
+            background: #000 url(https://wow.zamimg.com/images/nether/twisting-nether-bg.jpg) center / cover;
+            color: #bbb;
+            font: 24px var(--font-family-standard);
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        body {align-items: center; display: flex; justify-content: center}
+        section {
+            background: var(--wh-gray-1);
+            box-shadow: 0 5px 20px #000;
+            border: var(--border-width) solid var(--wh-gray-3);
+            border-radius: 10px;
+            display: inline-block;
+            position: relative;
+        }
+        section p {margin: 1em}
+        a {color: var(--link-color); text-decoration: none}
+        a:hover {color: var(--link-color-hover)}
+        #logo {
+            align-items: flex-end;
+            bottom: calc(100% + var(--border-width));
+            display: flex;
+            height: 0;
+            justify-content: center;
+            left: 0;
+            position: absolute;
+            right: 0;
+            text-align: center;
+        }
+        #logo:before {
+            background: url(https://wow.zamimg.com/images/logos/wh-logo.png) no-repeat bottom / contain;
+            content: "";
+            display: inline-block;
+            height: 100px;
+            width: 171px;
+        }
+    </style>
+</head>
+<body>
+<section>
+    <a href="https://www.wowhead.com/" id="logo" aria-label="Wowhead logo linking to homepage"></a>
+    <p>You find yourself in the Twisting Nether.</p>
+    <p>You are likely to be eaten by a nathrezim.</p>
+    <p><a href="https://www.wowhead.com/">Return to Wowhead</a></p>
+</section>
+</body>
+</html>

@@ -1,0 +1,8 @@
+// Set color variables which control the site theme.
+.retribution-paladin-sim-ui {
+	@include theme-color(
+		$paladin,
+		.95,
+		'/classic/assets/img/retribution_paladin.jpg'
+	);
+}

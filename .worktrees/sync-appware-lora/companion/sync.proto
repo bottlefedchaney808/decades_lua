@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package decades.sync.v1;
+
+// Protobuf schema for the same compact fixed-width wire packet encoded by wire.py.
+// The custom wire codec below is exactly 15 bytes; protobuf's normal encoding is
+// variable-length and is not used for on-air packets.
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  PIN_ADD = 1;
+  PIN_REMOVE = 2;
+  NODE_DEPLETION = 3;
+  GROUP_TARGET = 4;
+}
+
+message SyncMessage {
+  MessageType message_type = 1;
+  // First four SHA-256 digest bytes interpreted as an unsigned big-endian integer.
+  uint32 base_version_hash = 2;
+  // Stable unsigned 32-bit ID from the WoWhead dataset.
+  uint32 entity_id = 3;
+  // Unix seconds; zero represents an absent timestamp on the fixed-width wire.
+  uint32 timestamp = 4;
+  // Unsigned 16-bit guild/player identifier.
+  uint16 sender_id = 5;
+}

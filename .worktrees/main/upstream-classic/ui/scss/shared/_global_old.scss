@@ -1,0 +1,108 @@
+:root {
+	--theme-background-color: DarkSlateGrey;
+	--theme-background-image: linear-gradient(black, black);
+	--theme-background-opacity: 0.9;
+	--main-bg-color: DarkSlateGrey;
+	--main-secondary-color: Black;
+	--sidebar-text-color: White;
+	--sidebar-highlight-color: Blue;
+}
+
+* {
+	font-family: SimDefaultFont;
+	letter-spacing: 1px;
+}
+
+$sim-transitions: 0.2s ease-in;
+
+.loader {
+	border: 16px solid #f3f3f3; /* Light grey */
+	border-top: 16px solid #3498db; /* Blue */
+	border-radius: 50%;
+	width: 120px;
+	height: 120px;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.dropdown-root {
+	position: relative;
+	display: inline-block !important;
+	white-space: nowrap;
+}
+
+.dropdown-root:hover .dropdown-panel {
+	display: grid !important;
+}
+
+.dropdown-button {
+	cursor: pointer;
+	background-color: gray;
+}
+
+.dropdown-panel {
+	display: none;
+	position: absolute;
+	z-index: 1;
+	box-shadow: 2px 4px 20px 5px #000;
+}
+
+.dropdown-option-container {
+	background-color: gray;
+}
+
+.dropdown-option {
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+}
+
+*:not(.dropdown-button) > * > .dropdown-option:not(:hover) {
+	opacity: 0.7;
+}
+
+.positive {
+	color: $success !important;
+}
+
+.negative {
+	color: red !important;
+}
+
+.safe {
+	color: $success;
+}
+
+.warning {
+	color: yellow;
+	text-shadow:
+		0 0 var(--spacer-2) $danger,
+		0 0 var(--spacer-2) $danger,
+		0 0 var(--spacer-2) $danger;
+}
+
+.danger {
+	color: red;
+}
+
+.bold {
+	font-weight: bold;
+}
+
+a {
+	text-decoration: none;
+}
+
+// Override Bootstrap styling to keep inline with fieldset border
+legend {
+	float: none;
+	width: auto;
+}

@@ -1,0 +1,86 @@
+.results-pending .loader {
+	margin: auto;
+}
+
+.results-sim {
+	text-align: center;
+
+	.results-metric {
+		text-align: left;
+	}
+	.sim-sidebar & {
+		.results-sim-dps .topline-result-avg:after {
+			content: ' DPS';
+		}
+		.results-sim-tto .topline-result-avg:after {
+			content: ' TTO';
+		}
+		.results-sim-hps .topline-result-avg:after {
+			content: ' HPS';
+		}
+		.results-sim-tps .topline-result-avg:after {
+			content: ' TPS';
+		}
+		.results-sim-dtps .topline-result-avg:after {
+			content: ' DTPS';
+		}
+		.results-sim-tmi .topline-result-avg:after {
+			content: '% TMI';
+		}
+		.results-sim-cod .topline-result-avg:after {
+			content: '% COD';
+		}
+		.results-sim-dur .topline-result-avg:after {
+			content: ' Duration';
+		}
+
+		.results-sim-percent-oom .topline-result-avg:after {
+			content: ' spent OOM';
+		}
+	}
+
+	[class^='results-sim-'],
+	[class*=' results-sim-'] {
+		font-weight: bold;
+
+		.topline-result-avg {
+			font-size: 1.75rem;
+
+			&::after {
+				font-size: var(--content-font-size);
+				font-weight: normal;
+			}
+		}
+
+		.topline-result-stdev {
+			font-size: var(--content-font-size);
+			font-weight: normal;
+		}
+
+		.results-reference {
+			margin-bottom: var(--spacer-2);
+			font-weight: normal;
+
+			.results-reference-diff {
+				font-weight: bold;
+			}
+		}
+	}
+
+	.results-sim-reference {
+		margin-top: var(--spacer-2);
+		font-weight: normal;
+
+		&.has-reference {
+			.results-sim-set-reference {
+				display: none;
+			}
+		}
+
+		&:not(.has-reference) {
+			.results-sim-reference-bar {
+				display: none;
+			}
+		}
+	}
+}

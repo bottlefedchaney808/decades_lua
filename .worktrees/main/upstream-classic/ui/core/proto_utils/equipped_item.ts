@@ -1,0 +1,124 @@
+import { ItemRandomSuffix, ItemSpec, Profession } from '../proto/common.js';
+import { UIEnchant as Enchant, UIItem as Item } from '../proto/ui.js';
+import { distinct } from '../utils.js';
+import { ActionId } from './action_id.js';
+import { enchantAppliesToItem } from './utils.js';
+
+export function getWeaponDPS(item: Item): number {
+	return (item.weaponDamageMin + item.weaponDamageMax) / 2 / (item.weaponSpeed || 1);
+}
+
+interface EquippedItemConfig {
+	item: Item;
+	enchant?: Enchant | null;
+	randomSuffix?: ItemRandomSuffix | null;
+}
+
+/**
+ * Represents an equipped item along with enchants attached to it.
+ *
+ * This is an immutable type.
+ */
+export class EquippedItem {
+	readonly _item: Item;
+	readonly _randomSuffix: ItemRandomSuffix | null;
+	readonly _enchant: Enchant | null;
+
+	constructor(config: EquippedItemConfig) {
+		this._item = config.item;
+		this._randomSuffix = config.randomSuffix || null;
+		this._enchant = config.enchant || null;
+	}
+
+	get item(): Item {
+		// Make a defensive copy
+		return Item.clone(this._item);
+	}
+
+	get id(): number {
+		return this._item.id;
+	}
+
+	get randomSuffix(): ItemRandomSuffix | null {
+		return this._randomSuffix ? ItemRandomSuffix.clone(this._randomSuffix) : null;
+	}
+
+	get enchant(): Enchant | null {
+		// Make a defensive copy
+		return this._enchant ? Enchant.clone(this._enchant) : null;
+	}
+
+	equals(other: EquippedItem) {
+		if (!Item.equals(this._item, other.item)) return false;
+
+		if ((this._randomSuffix == null) != (other.randomSuffix == null)) return false;
+
+		if (this._randomSuffix && other.randomSuffix && !ItemRandomSuffix.equals(this._randomSuffix, other.randomSuffix)) return false;
+
+		if ((this._enchant == null) != (other.enchant == null)) return false;
+
+		if (this._enchant && other.enchant && !Enchant.equals(this._enchant, other.enchant)) return false;
+
+		return true;
+	}
+
+	/**
+	 * Replaces the item and tries to keep the existing enchants if possible.
+	 */
+	withItem(item: Item): EquippedItem {
+		let newEnchant;
+		if (this._enchant && enchantAppliesToItem(this._enchant, item)) newEnchant = this._enchant;
+
+		return new EquippedItem({ item, enchant: newEnchant });
+	}
+
+	/**
+	 * Returns a new EquippedItem with the given enchant applied.
+	 */
+	withEnchant(enchant: Enchant | null): EquippedItem {
+		return new EquippedItem({ item: this._item, enchant, randomSuffix: this._randomSuffix });
+	}
+
+	withRandomSuffix(randomSuffix: ItemRandomSuffix | null): EquippedItem {
+		return new EquippedItem({ item: this._item, enchant: this.enchant, randomSuffix });
+	}
+
+	asActionId(): ActionId {
+		if (this._randomSuffix) return ActionId.fromRandomSuffix(this._item, this._randomSuffix);
+
+		return ActionId.fromItemId(this._item.id);
+	}
+
+	asSpec(): ItemSpec {
+		return ItemSpec.create({
+			id: this._item.id,
+			randomSuffix: this._randomSuffix?.id,
+			enchant: this._enchant?.effectId,
+		});
+	}
+
+	getProfessionRequirements(): Array<Profession> {
+		const profs: Array<Profession> = [];
+		if (this._item.requiredProfession != Profession.ProfessionUnknown) {
+			profs.push(this._item.requiredProfession);
+		}
+		if (this._enchant != null && this._enchant.requiredProfession != Profession.ProfessionUnknown) {
+			profs.push(this._enchant.requiredProfession);
+		}
+		return distinct(profs);
+	}
+	getFailedProfessionRequirements(professions: Array<Profession>): Array<Item | Enchant> {
+		const failed: Array<Item | Enchant> = [];
+		if (this._item.requiredProfession != Profession.ProfessionUnknown && !professions.includes(this._item.requiredProfession)) {
+			failed.push(this._item);
+		}
+		if (
+			this._enchant != null &&
+			this._enchant.requiredProfession != Profession.ProfessionUnknown &&
+			!professions.includes(this._enchant.requiredProfession)
+		) {
+			failed.push(this._enchant);
+		}
+		return failed;
+	}
+}

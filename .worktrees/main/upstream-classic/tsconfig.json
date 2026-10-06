@@ -1,0 +1,35 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "strict": true,
+        "lib": [
+            "DOM",
+            "ES2021",
+            "DOM.Iterable"
+        ],
+        "outDir": "dist/classic",
+        "pretty": false,
+        "allowJs": true,
+        "allowImportingTsExtensions": true,
+        "noEmit": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "baseUrl": ".",
+        "jsx": "preserve",
+        "jsxFactory": "element",
+        "jsxFragmentFactory": "fragment"
+    },
+    "include": [
+        "."
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "binary_dist",
+        ".history",
+        "ui/core/index.ts",
+        "ui/core/proto/*"
+    ]
+}

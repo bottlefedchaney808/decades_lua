@@ -1,0 +1,49 @@
+{
+  "name": "Holy Paladin",
+  "priorityList": [
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 20286
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 20293
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 10314
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 24239
+        }
+      }
+    }
+  ],
+  "autocastOtherCooldowns": [
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 10318
+        }
+      }
+    },
+    {
+      "action": {
+        "castSpell": {
+          "spellId": 20924
+        }
+      }
+    }
+  ]
+}

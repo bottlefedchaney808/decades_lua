@@ -1,0 +1,155 @@
+{
+    "type": "TypeAPL",
+    "priorityList": [
+        {
+            "action": {
+                "autocastOtherCooldowns": {}
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "and": {
+                        "vals": [
+                            {
+                                "auraIsActive": {
+                                    "auraId": {
+                                        "spellId": 9840
+                                    }
+                                }
+                            },
+                            {
+                                "cmp": {
+                                    "op": "OpLe",
+                                    "lhs": {
+                                        "auraRemainingTime": {
+                                            "auraId": {
+                                                "spellId": 9840
+                                            }
+                                        }
+                                    },
+                                    "rhs": {
+                                        "const": {
+                                            "val": "4s"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "spellIsReady": {
+                                    "spellId": {
+                                        "spellId": 18562
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 18562
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "multidot": {
+                    "spellId": {
+                        "spellId": 9840
+                    },
+                    "maxDots": 1,
+                    "maxOverlap": {
+                        "const": {
+                            "val": "2s"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "multidot": {
+                    "spellId": {
+                        "spellId": 9857
+                    },
+                    "maxDots": 1,
+                    "maxOverlap": {
+                        "const": {
+                            "val": "2s"
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "and": {
+                        "vals": [
+                            {
+                                "cmp": {
+                                    "op": "OpLt",
+                                    "lhs": {
+                                        "currentHealthPercent": {}
+                                    },
+                                    "rhs": {
+                                        "const": {
+                                            "val": "0.6"
+                                        }
+                                    }
+                                }
+                            },
+                            {
+                                "spellIsReady": {
+                                    "spellId": {
+                                        "spellId": 9862
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 9862
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        },
+        {
+            "action": {
+                "condition": {
+                    "cmp": {
+                        "op": "OpLt",
+                        "lhs": {
+                            "currentHealthPercent": {}
+                        },
+                        "rhs": {
+                            "const": {
+                                "val": "0.8"
+                            }
+                        }
+                    }
+                },
+                "castSpell": {
+                    "spellId": {
+                        "spellId": 9888
+                    },
+                    "target": {
+                        "type": 4,
+                        "index": 0
+                    }
+                }
+            }
+        }
+    ]
+}

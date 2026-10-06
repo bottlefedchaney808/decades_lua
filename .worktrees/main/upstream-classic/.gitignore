@@ -1,0 +1,48 @@
+# nodejs modules
+node_modules
+ui/core/index.ts
+ui/*/index.html
+.dirstamp
+
+# IDE folders
+.idea
+.history
+
+# binaries
+dist
+binary_dist
+sim/web/__debug_bin
+/wowsimclassiccli*
+/wowsimclassic*
+/wowsimsodcli*
+/wowsimsod*
+chromedriver*
+google-chrome*
+
+# temporary files
+*.results.tmp
+
+#.dockerignore
+/classic/
+/sod/
+*.code-workspace
+wowsimclassic
+wowsimsod
+
+# old result file
+TestAPL.results
+
+#macos
+.DS_Store
+
+# air tmp dir
+tmp/
+
+# lib
+wowsimclassic*.so
+wowsimclassic*.dll
+wowsimclassic*.h
+wowsimsod*.so
+wowsimsod*.dll
+wowsimsod*.h
+.vscode/launch.json

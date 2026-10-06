@@ -1,0 +1,78 @@
+package paladin
+
+import (
+	"time"
+
+	"github.com/wowsims/classic/sim/core"
+	"github.com/wowsims/classic/sim/core/proto"
+)
+
+func (paladin *Paladin) registerExorcism() {
+	ranks := []struct {
+		level      int32
+		spellID    int32
+		manaCost   float64
+		scaleLevel int32
+		minDamage  float64
+		maxDamage  float64
+		scale      float64
+	}{
+		{level: 20, spellID: 879, manaCost: 85, scaleLevel: 25, minDamage: 84, maxDamage: 96, scale: 1.2},
+		{level: 28, spellID: 5614, manaCost: 135, scaleLevel: 33, minDamage: 152, maxDamage: 172, scale: 1.6},
+		{level: 36, spellID: 5615, manaCost: 180, scaleLevel: 41, minDamage: 217, maxDamage: 245, scale: 2.0},
+		{level: 44, spellID: 10312, manaCost: 235, scaleLevel: 49, minDamage: 304, maxDamage: 342, scale: 2.4},
+		{level: 52, spellID: 10313, manaCost: 285, scaleLevel: 57, minDamage: 393, maxDamage: 439, scale: 2.8},
+		{level: 60, spellID: 10314, manaCost: 345, scaleLevel: 60, minDamage: 505, maxDamage: 563, scale: 3.2},
+	}
+
+	for i, rank := range ranks {
+		rank := rank
+		if paladin.Level < rank.level {
+			break
+		}
+
+		minDamage := rank.minDamage + float64(min(paladin.Level, rank.scaleLevel)-rank.level)*rank.scale
+		maxDamage := rank.maxDamage + float64(min(paladin.Level, rank.scaleLevel)-rank.level)*rank.scale
+
+		spell := paladin.RegisterSpell(core.SpellConfig{
+			ActionID:    core.ActionID{SpellID: rank.spellID},
+			SpellSchool: core.SpellSchoolHoly,
+			DefenseType: core.DefenseTypeMagic,
+			ProcMask:    core.ProcMaskSpellDamage,
+			Flags:       core.SpellFlagMeleeMetrics | core.SpellFlagAPL | core.SpellFlagBinary, //Logs show it never has partial resists, No clue why, still misses
+
+			RequiredLevel: int(rank.level),
+			Rank:          i + 1,
+
+			SpellCode: SpellCode_PaladinExorcism,
+			ManaCost: core.ManaCostOptions{
+				FlatCost: rank.manaCost,
+			},
+
+			Cast: core.CastConfig{
+				DefaultCast: core.Cast{
+					GCD: core.GCDDefault,
+				},
+				CD: core.Cooldown{
+					Timer:    paladin.NewTimer(),
+					Duration: time.Second * 15,
+				},
+			},
+
+			DamageMultiplier: 1,
+			ThreatMultiplier: 1,
+
+			BonusCoefficient: 0.429,
+
+			ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool { 
+				return target.MobType == proto.MobType_MobTypeDemon || target.MobType == proto.MobType_MobTypeUndead
+			},
+
+			ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+				spell.CalcAndDealDamage(sim, target, sim.Roll(minDamage, maxDamage), spell.OutcomeMagicHitAndCrit)
+			},
+		})
+
+		paladin.exorcism = append(paladin.exorcism, spell)
+	}
+}

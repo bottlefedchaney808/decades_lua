@@ -1,0 +1,157 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "./proto";
+
+message HunterTalents {
+	// Beast Mastery
+	int32 improved_aspect_of_the_hawk = 1;
+	int32 endurance_training = 2;
+	int32 improved_eyes_of_the_beast = 3;
+	int32 improved_aspect_of_the_monkey = 4;
+	int32 thick_hide = 5;
+	int32 improved_revive_pet = 6;
+	int32 pathfinding = 7;
+	bool bestial_swiftness = 8;
+	int32 unleashed_fury = 9;
+	int32 improved_mend_pet = 10;
+	int32 ferocity = 11;
+	int32 spirit_bond = 12;
+	bool intimidation = 13;
+	int32 bestial_discipline = 14;
+	int32 frenzy = 15;
+	bool bestial_wrath = 16;
+
+	// Marksmanship
+	int32 improved_concussive_shot = 17;
+	int32 efficiency = 18;
+	int32 improved_hunters_mark = 19;
+	int32 lethal_shots = 20;
+	bool aimed_shot = 21;
+	int32 improved_arcane_shot = 22;
+	int32 hawk_eye = 23;
+	int32 improved_serpent_sting = 24;
+	int32 mortal_shots = 25;
+	bool scatter_shot = 26;
+	int32 barrage = 27;
+	int32 improved_scorpid_sting = 28;
+	int32 ranged_weapon_specialization = 29;
+	bool trueshot_aura = 30;
+
+	// Survival
+	int32 monster_slaying = 31;
+	int32 humanoid_slaying = 32;
+	int32 deflection = 33;
+	int32 entrapment = 34;
+	int32 savage_strikes = 35;
+	int32 improved_wing_clip = 36;
+	int32 clever_traps = 37;
+	int32 survivalist = 38;
+	bool deterrence = 39;
+	int32 trap_mastery = 40;
+	int32 surefooted = 41;
+	int32 improved_feign_death = 42;
+	int32 killer_instinct = 43;
+	bool counterattack = 44;
+	int32 lightning_reflexes = 45;
+	bool wyvern_sting = 46;
+}
+
+message Hunter {
+	message Rotation {
+		enum RotationType {
+			UnknownType = 0;
+			SingleTarget = 1;
+			Aoe = 3;
+			Custom = 2;
+		}
+		RotationType type = 9;
+
+		enum StingType {
+			NoSting = 0;
+			ScorpidSting = 1;
+			SerpentSting = 2;
+		}
+		StingType sting = 2;
+		bool multi_dot_serpent_sting = 3;
+	}
+	
+	message Options {
+		enum Ammo {
+			AmmoNone = 0;
+			// 25
+			RazorArrow = 1;
+			SolidShot = 2;
+			// 40
+			JaggedArrow = 3;
+			AccurateSlugs = 4;
+			// 50
+			MithrilGyroShot = 5;
+			RockshardPellets = 6;
+			// 60
+			IceThreadedArrow = 7;
+			ThoriumHeadedArrow = 8;
+			Doomshot = 9;
+			IceThreadedBullet = 10;
+			ThoriumShells = 11;
+			MiniatureCannonBalls = 12;
+		}
+		Ammo ammo = 1;
+
+		enum QuiverBonus
+		{
+			QuiverNone = 0;
+			Speed10 = 1;
+			Speed11 = 2;
+			Speed12 = 3;
+			Speed13 = 4;
+			Speed14 = 5;
+			Speed15 = 6;
+		}
+		QuiverBonus quiver_bonus = 2;
+
+		enum PetType {
+			PetNone = 0;
+			Cat = 1;
+			WindSerpent = 2;
+			Wolf = 3;
+			Bat = 4;
+			Bear = 5;
+			Owl = 6;
+			Boar = 7;
+			CarrionBird = 8;
+			Crab = 9;
+			Crocolisk = 10;
+			Gorilla = 11;
+			Hyena = 12;
+			Raptor = 13;
+			Scorpid = 14;
+			Spider = 15;
+			Tallstrider = 16;
+			Turtle = 17;
+		}
+
+		enum PetAttackSpeed {
+			One = 0;
+			OneTwo = 1;
+			OneThree = 2;
+			OneFour = 3;
+			OneFive = 4;
+			OneSix = 5;
+			OneSeven = 6;
+			Two = 7;
+			TwoFour = 8;
+			TwoFive = 9;
+		}
+
+		PetType pet_type = 3;
+		double pet_uptime = 4;
+
+		double pet_attack_speed_old = 5;
+
+		bool new_raptor_strike = 6;
+
+		PetAttackSpeed pet_attack_speed = 7;
+	}
+	Options options = 2;
+}

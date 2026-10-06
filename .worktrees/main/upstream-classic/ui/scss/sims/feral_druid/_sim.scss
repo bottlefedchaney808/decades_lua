@@ -1,0 +1,8 @@
+// Set color variables which control the site theme.
+.feral-druid-sim-ui {
+	@include theme-color(
+		$druid,
+		.95,
+		'/classic/assets/img/feral_druid_background.jpg'
+	);
+}
