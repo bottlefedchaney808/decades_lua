@@ -6,7 +6,7 @@
     },
     {
       "path": "data/places.js",
-      "sha256": "0d6647bd4f09b29004b4c4fbe556c1e8c4d42bceee58d003b73a96fe89e8628d"
+      "sha256": "9b7437b17fa26c7ff4412def74a2f938eb5598b48d67a3dac08068819f8e8db3"
     },
     {
       "path": "data/pois.js",
@@ -14,10 +14,10 @@
     },
     {
       "path": "data/questlog_schema.js",
-      "sha256": "467edf6a40a39f7f6fd8b55db56268110b5e69b6dad803556b94e920500d527d"
+      "sha256": "e28dcf9a384b39994be802e09c802fac6fba7d97b0e7f26156ab18ca44d238d8"
     }
   ],
-  "dataset_version": "20bdff7edb6563e3",
+  "dataset_version": "dae2c49d156c8dfb",
   "manifest_format": 1,
   "tile_packs": {
     "eastern-kingdoms": {
