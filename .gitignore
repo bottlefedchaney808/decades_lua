@@ -1,0 +1,6 @@
+# Nested working trees (Tree B, sync branch, etc.) — never commit their contents
+/.worktrees/
+
+# Tooling caches / local agent state
+.pytest_cache/
+.remember/
