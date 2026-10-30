@@ -31,6 +31,7 @@
 **Interfaces:**
 - Produces: `dist/forever/bundle/.dirstamp` (fresh timestamp) consumed by Task 2's serve/verify; known-good `npm run type-check`.
 
+- [ ] **Step 0 (day-1 probe, ~15 min, do not defer): pin the scrape endpoints.** Run Task 7 Step 1 now, in parallel with Step 2's `npm ci`: the UA curl against the Wowhead Forever world-map page and recording of working dataset URLs in `wow-forever/scrape/ENDPOINTS.md`. This exists so the Task 7 day-2 decision gate judges captured evidence instead of an unrun probe. Do not start Tasks 8–10 here.
 - [ ] **Step 1: Gate the environment**
 
 ```bash
@@ -228,8 +229,7 @@ Expected: prints a DPS number > 0. Assert on `error.message`, never on the `erro
 **Interfaces:**
 - Produces: rebuilt `dist/forever` carrying the brand (verified in Step 5). No code interfaces.
 
-- [ ] **Step 0 (day-1, parallel with Task 1): run Task 7 Step 1 only** — the UA curl probe + recording working URLs in `scrape/ENDPOINTS.md`. This is a ~15-minute spike that must not wait behind the sim build, so the day-2 decision gate judges captured evidence instead of an unrun probe. Then return here.
-- [ ] **Step 1: Brand constants.** `grep -rn "wowsims\|WoWSims\|CLASSIC\|Classic" ui/index.html ui/index_template.html ui/core/components/social_links.tsx makefile | head -30` — edit each hit per Files above. Titles become `WoW4_SiMs Forever <Title>`. Keep every internal URL path (`/forever/`, spec dirs) untouched. Also strip the Google Tag Manager `<script>` (`G-T3HBB0LXNX`) from `ui/index.html` and `ui/index_template.html` — upstream analytics must not receive your LAN traffic.
+- [ ] **Step 1: Brand constants.** (The day-1 scrape probe lives in Task 1 Step 0 — if it was skipped, run it before starting Task 7.) `grep -rn "wowsims\|WoWSims\|CLASSIC\|Classic" ui/index.html ui/index_template.html ui/core/components/social_links.tsx makefile | head -30` — edit each hit per Files above. Titles become `WoW4_SiMs · Forever <Title>` (keep the middot — it is the locked brand token, and the Step 4 grep checks for it). Keep every internal URL path (`/forever/`, spec dirs) untouched. Also strip the Google Tag Manager `<script>` (`G-T3HBB0LXNX`) from `ui/index.html` and `ui/index_template.html` — upstream analytics must not receive your LAN traffic.
 - [ ] **Step 2: Theme.** In `ui/scss/shared/_variables.scss` change the `$color-*`/bootstrap overrides to the Forever dark palette: background `#0d0f14`, panel `#161a22`, accent gold `#c8a24b`, secondary teal `#3f8f8a`. Only variable edits, no new selectors. If the palette is bootstrap-var-based (`grep -rn "^\$dark\|data-bs-theme" ui/scss/`), change the mapped values only.
 - [ ] **Step 3: Rebuild everything as one generation**
 
@@ -238,7 +238,7 @@ touch ui/index_template.html   # generated ui/*/index.html depend only on the te
 make dist/forever/bundle/.dirstamp && GOOS=js GOARCH=wasm go build -tags=with_db -o ./dist/forever/lib.wasm ./sim/wasm/ && make copydb
 ```
 
-- [ ] **Step 4: Re-run Task 5's browser checklist (fresh tab, hard reload) + `grep -c "Dreadnaught" dist/forever/lib.wasm` (nonzero) + `curl -s http://127.0.0.1:8732/forever/ | grep -c WoW4_SiMs` (≥1) + `grep -L 'WoW4_SiMs' dist/forever/*/index.html` prints nothing.**
+- [ ] **Step 4: Re-run Task 5's browser checklist (fresh tab, hard reload) + `grep -c "Dreadnaught" dist/forever/lib.wasm` (nonzero) + `curl -s http://127.0.0.1:8732/forever/ | grep -c "WoW4_SiMs · Forever"` (≥1) + `grep -L 'WoW4_SiMs' dist/forever/*/index.html` prints nothing.**
 - [ ] **Step 5: Commit `feat(ui): WoW4_SiMs brand + Forever dark palette (theme pass, upstream-mergeable)` and push.**
 
 ### Task 7: Pin the world-map endpoints (map scrape, phase 1)
@@ -292,6 +292,7 @@ def test_write_pois_and_nodes_and_routes(tmp_path):
     assert w.write_pois([{"n": "Inn", "c": "innkeeper", "ll": [0.1, 0.2]}]).startswith("window.WH_POIS=[")
     assert w.write_nodes({"herb-x": {"n": "X", "pts": [[0.1, 0.2]]}}).startswith("window.WH_NODES=")
     assert w.write_routes([]).startswith("window.WH_ROUTES=")
+    assert w.write_voyages([]).startswith("window.WH_VOYAGES=")
 
 def test_counts_validation(tmp_path):
     try:
@@ -302,7 +303,7 @@ def test_counts_validation(tmp_path):
 ```
 
 - [ ] **Step 2: Run, confirm red:** `/usr/bin/python3 -m pytest tests/test_write_datasets.py -q` → 3 failures (import error).
-- [ ] **Step 3: Implement `scrape/write_datasets.py`** — writer uses `json.dumps(obj, ensure_ascii=False)` + exact `window.WH_*=` prefixes and trailing `;`? **Match shipped files exactly**: first run `tail -c 50 data/places.js; tail -c 50 data/pois.js; tail -c 50 data/nodes.js` and copy their exact terminator into the writers; `build_all` reads the capture filenames pinned in Task 7's ENDPOINTS.md, calls the four writers, asserts each capture's counts ≥ 90% of the 2026-09-20 baseline counts (hard-coded dict in the module), writes only to a temp dir and returns counts; on any shortfall it raises `SystemExit` before writing (test 3's path when dir empty).
+- [ ] **Step 3: Implement `scrape/write_datasets.py`** — writer uses `json.dumps(obj, ensure_ascii=False)` + exact `window.WH_*=` prefixes and trailing `;`? **Match shipped files exactly**: first run `tail -c 50 data/places.js; tail -c 50 data/pois.js; tail -c 50 data/nodes.js` and copy their exact terminator into the writers; `build_all` reads the capture filenames pinned in Task 7's ENDPOINTS.md, calls all five writers, asserts each capture's counts ≥ 90% of the 2026-09-20 baseline counts (hard-coded dict in the module), writes only to a temp dir and returns counts; on any shortfall it raises `SystemExit` before writing (test 3's path when dir empty).
 - [ ] **Step 4: Green:** `/usr/bin/python3 -m pytest tests/test_write_datasets.py -q` → 3 passed. Also run the full map suite: `/usr/bin/python3 -m pytest tests/ -q` (was 42 passed, now 45). Byte-compat note: shipped `places.js` uses compact separators (`{"zones":[{"n":…`), while `pois.js`/`nodes.js` use default spaced separators — `write_places` must use `separators=(",", ":")`, the others default, all with `ensure_ascii=False`, or the regen produces a huge noisy diff. Add one golden test: parse the shipped file and assert `write_places(parsed) == original_text` (same for pois/nodes).
 - [ ] **Step 5: Commit `feat(scrape): dataset writers with baseline-count guard (TDD)`.**
 

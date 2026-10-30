@@ -49,7 +49,7 @@ A personal, LAN-only daily driver: brand-themede WoWSims-derived Forever simulat
 
 ## Verification ("green" = done)
 
-1. `go build --tags=with_db ./cmd/wowsimcli/` clean; fixture run 300 iterations, `error null`, DPS > 0.
+1. `go build --tags=with_db ./cmd/wowsimcli/` clean; fixture run 300 iterations, `error.message` empty (the `error` object is always emitted — `EmitUnpopulated`), DPS > 0.
 2. HTTP: index/spec pages 200; `lib.wasm` 200 with `application/wasm`; `Dreadnaught Breastplate` present in shipped wasm AND dist db.
 3. **Browser checklist (first time ever):** all 20 spec pages + raid + detailed_results load; one gear sim completes with results.
 4. Map: `pytest tests/` + `node --test tests/questlog_schema.test.js` + `node verify_sha256.js` + `audit.py` all pass against the new datasets.
