@@ -183,10 +183,15 @@ The CLI is cobra: `sim` subcommand, required flag `--infile` (NOT `--input`), an
 
 ```bash
 /tmp/wowsimcli sim --infile cmd/wowsimcli/input.json --outfile /tmp/smoke.json
-/usr/bin/python3 -c "import json;r=json.load(open('/tmp/smoke.json'));assert not r.get('error'), r.get('error');print(r['raidMetrics']['dps']['avg'])"
+/usr/bin/python3 -c "
+import json
+r = json.load(open('/tmp/smoke.json'))
+err = (r.get('error') or {}).get('message') or ''   # object is always present (EmitUnpopulated); judge the message
+assert not err, err
+print(r['raidMetrics']['dps']['avg'])"
 ```
 
-Expected: prints a DPS number > 0. `No item with id` in the error object = db generation bug → STOP, report. (If the JSON path differs, inspect `/tmp/smoke.json` keys once and fix the assertion — then mirror the same assertion into `verify.sh` in Task 11.)
+Expected: prints a DPS number > 0. Assert on `error.message`, never on the `error` object's presence — `protojson.MarshalOptions{EmitUnpopulated: true}` emits `error` on every result, and the default enum `ErrorOutcomeError = 0` makes an empty error object truthy, so `not r.get('error')` fails on a healthy sim. `No item with id` in the message = db generation bug → STOP, report. (If the JSON path differs, inspect `/tmp/smoke.json` keys once and fix the assertion — then mirror the same assertion into `verify.sh` in Task 11.)
 
 ### Task 5: First-ever browser verification (manual checklist)
 
@@ -213,7 +218,7 @@ Expected: prints a DPS number > 0. `No item with id` in the error object = db ge
 ### Task 6: Brand + theme pass ("WoW4_SiMs · Forever")
 
 **Files:**
-- Modify: `makefile` (2 sed title rules: `Classic $(title) Simulator` / `CLASSIC $(title) Simulator` → `WoW4_SiMs Forever $(title)`)
+- Modify: `makefile` (2 sed title rules: `Classic $(title) Simulator` / `CLASSIC $(title) Simulator` → `WoW4_SiMs · Forever $(title)` — keep the middot; it is the locked brand token)
 - Modify: `ui/index_template.html` (page `<title>` template, header brand text, strip the gtag `<script>`)
 - Modify: `ui/index.html` (hand-written tracked homepage: `<title>WoWSims - Forever</title>`, `wowsims-title`, github/patreon links, "Welcome to WoWSims - Forever", gtag script — this is the real homepage brand edit; the template does not cover it)
 - Modify: `ui/core/components/social_links.tsx` (remove wowsims links — note: `.tsx`, not `.ts`), `ui/core/components/sim_header.tsx` / `sim_title_dropdown.tsx` (brand string)
@@ -223,6 +228,7 @@ Expected: prints a DPS number > 0. `No item with id` in the error object = db ge
 **Interfaces:**
 - Produces: rebuilt `dist/forever` carrying the brand (verified in Step 5). No code interfaces.
 
+- [ ] **Step 0 (day-1, parallel with Task 1): run Task 7 Step 1 only** — the UA curl probe + recording working URLs in `scrape/ENDPOINTS.md`. This is a ~15-minute spike that must not wait behind the sim build, so the day-2 decision gate judges captured evidence instead of an unrun probe. Then return here.
 - [ ] **Step 1: Brand constants.** `grep -rn "wowsims\|WoWSims\|CLASSIC\|Classic" ui/index.html ui/index_template.html ui/core/components/social_links.tsx makefile | head -30` — edit each hit per Files above. Titles become `WoW4_SiMs Forever <Title>`. Keep every internal URL path (`/forever/`, spec dirs) untouched. Also strip the Google Tag Manager `<script>` (`G-T3HBB0LXNX`) from `ui/index.html` and `ui/index_template.html` — upstream analytics must not receive your LAN traffic.
 - [ ] **Step 2: Theme.** In `ui/scss/shared/_variables.scss` change the `$color-*`/bootstrap overrides to the Forever dark palette: background `#0d0f14`, panel `#161a22`, accent gold `#c8a24b`, secondary teal `#3f8f8a`. Only variable edits, no new selectors. If the palette is bootstrap-var-based (`grep -rn "^\$dark\|data-bs-theme" ui/scss/`), change the mapped values only.
 - [ ] **Step 3: Rebuild everything as one generation**
@@ -267,7 +273,7 @@ Then discover the JSON routes the page itself calls (look for `world-map` api pa
 
 **Interfaces:**
 - Consumes: none (pure writer; inputs are dicts).
-- Produces: `write_places(obj) -> str`, `write_pois(list) -> str`, `write_nodes(dict) -> str`, `write_routes(list) -> str` — emit byte-compatible `window.WH_*` formats; `build_all(captures_dir, out_dir)` returning counts dict `{"places":int,"pois":int,"nodes":int,"routes":int,"voyages":int}`. Task 9 calls these.
+- Produces: `write_places(obj) -> str`, `write_pois(list) -> str`, `write_nodes(dict) -> str`, `write_routes(list) -> str`, `write_voyages(list) -> str` — emit byte-compatible `window.WH_*` formats (`window.WH_ROUTES=` / `window.WH_VOYAGES=`); `build_all(captures_dir, out_dir)` returning counts dict `{"places":int,"pois":int,"nodes":int,"routes":int,"voyages":int}`. Task 9 calls these.
 
 - [ ] **Step 1: Write failing tests** — `tests/test_write_datasets.py`:
 
@@ -305,7 +311,7 @@ def test_counts_validation(tmp_path):
 **Files:**
 - Create: `scrape/adapt_captures.py` (maps Task 7 raw JSON → writer inputs)
 - Modify: `data/places.js`, `data/pois.js`, `data/nodes.js`; create `data/routes.js`, `data/voyages.js`
-- Modify: `version_manifest.py` + regenerate manifest/`dataset_version` + `index.html` footer hash (guard test enforces match); `audit.py` baseline counts
+- Modify: `version_manifest.py` + regenerate manifest/`dataset_version` + `index.html` footer hash (guard test enforces match); `audit.py` `DATA_FILES` (add routes/voyages — duplicate + coordinate checks only, no count floors)
 
 **Interfaces:**
 - Consumes: `write_datasets.build_all` + capture files (Tasks 7–8).
@@ -320,7 +326,7 @@ cd /home/zinko83/WoW4_SiMs/wow-forever
 /usr/bin/python3 scrape/adapt_captures.py --write     # temp files -> validate -> mv into data/
 ```
 Expected counts ≈ Task 7 Step 2 numbers. 
-- [ ] **Step 3: Update guards and pass the suite.** `audit.py` has **no count baselines** — `audit_dataset` only counts, flags exact duplicates, and checks coordinates (tile grids are hard-coded). The count guard lives only in `write_datasets.BASELINE` (Task 8). So the adapter must, before writing: dedupe `(n, ll)` records and clamp or reject coordinates outside [0,1] — a 32.9k-point scrape will likely contain duplicates and normalisation oddities, and `audit.py` fails on either with no other remedy. Acceptance is `audit.py` exit 0 with no issues listed. The "re-pick 20 landmarks" check is the zone-centre comparison (~line 196, points within 0.09 of zone centres) — re-pick landmarks that exist in the new data if it breaks. Then rerun:
+- [ ] **Step 3: Update guards and pass the suite.** `audit.py` has **no count baselines** — `audit_dataset` only counts, flags exact duplicates, and checks coordinates (tile grids are hard-coded). The count guard lives only in `write_datasets.BASELINE` (Task 8). So the adapter must, before writing: dedupe `(n, ll)` records and **reject** (never clamp) out-of-range coordinates. The audit bound is half-open (`audit.py`: `0 <= cx < CANVAS[0] and 0 <= cy < CANVAS[1]`), so keep only points with `0 <= lng < 1` and `0 < lat <= 1` — `lat == 0` and `lng == 1` fail the canvas test. Document the half-open rule in the adapter docstring and STOP if dropped points exceed 1% of a dataset. — a 32.9k-point scrape will likely contain duplicates and normalisation oddities, and `audit.py` fails on either with no other remedy. Acceptance is `audit.py` exit 0 with no issues listed. The "re-pick 20 landmarks" check is the zone-centre comparison (~line 196, points within 0.09 of zone centres) — re-pick landmarks that exist in the new data if it breaks. Then rerun:
 `/usr/bin/python3 audit.py && /usr/bin/python3 -m pytest tests/ -q && node --test tests/questlog_schema.test.js && node verify_sha256.js`
 Expected: all pass; manifest/footer-hash test forces updating the `dataset_version` + `index.html` footer in the same commit — do it with the same command the guard documents (`version_manifest.py` regenerating).
 - [ ] **Step 4: Commit `data(map): tree-16 refresh — places/pois/nodes + routes/voyages datasets` and push** (MAP remote exists: `origin https://github.com/bottlefedchaney808/wow-forever.git`).
@@ -332,6 +338,7 @@ Expected: all pass; manifest/footer-hash test forces updating the `dataset_versi
 
 **Interfaces:** Consumes `window.WH_ROUTES/WH_VOYAGES` + new-prefixed `WH_NODES` keys (Task 9).
 
+- [ ] **Step 0: Load the new datasets.** `index.html` (~lines 100-103) only scripts `places.js`, `pois.js`, `nodes.js`, `questlog_schema.js`. Add `<script src="data/routes.js">` and `<script src="data/voyages.js">` beside them, and guard every use with `if (window.WH_ROUTES)` / `if (window.WH_VOYAGES)` so the September-data fallback (no new files) still boots.
 - [ ] **Step 1: Extend the category loop.** The loop (`index.html` ~319-389) auto-includes any new node key, BUT it is binary: `herb: k.indexOf('herb') === 0` and everything else goes into the Mining list with ore-family hues (`nodeColor` gives non-herb keys hue 25–73). So fish/leather/cloth would silently land in the Mining list in ore colors — "auto-discovers" is true and insufficient. Replace the binary split with a prefix map keyed on the text before the first `-`:
   - `var CATS = {herb:'herb-list', ore:'mine-list', fish:'fish-list', leather:'leather-list', cloth:'cloth-list'}`
   - add the three new `<div id="…-list">` containers next to the existing ones (~line 83)
@@ -361,19 +368,25 @@ export PATH=/home/zinko83/tools/go/bin:$PATH
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 SIM="$ROOT/.publish/wow4_sims/upstream-classic"
 MAP="$ROOT/wow-forever"
-ok=1
-chk() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then echo "PASS $name"; else echo "FAIL $name"; ok=0; fi; }
+ok=0
+chk() { local name="$1"; shift; if "$@" >/dev/null 2>&1; then echo "PASS $name"; else echo "FAIL $name"; ok=1; fi; }
 chk "sim:go-build"      bash -c "cd '$SIM' && go build -tags=with_db -o /tmp/wowsimcli ./cmd/wowsimcli/"
 chk "sim:wasm-forever"  grep -q "Dreadnaught Breastplate" "$SIM/dist/forever/lib.wasm"
 chk "sim:http-index"    curl -sf -o /dev/null "http://127.0.0.1:8732/forever/"
 chk "sim:http-wasm"     bash -c "curl -sf -o /dev/null -w '%{content_type}' 'http://127.0.0.1:8732/forever/lib.wasm' | grep -q application/wasm"
-chk "sim:cli-smoke"     bash -c "cd '$SIM' && /tmp/wowsimcli sim --infile cmd/wowsimcli/input.json --outfile /tmp/smoke.json && /usr/bin/python3 -c \"import json;r=json.load(open('/tmp/smoke.json'));assert not r.get('error') and r['raidMetrics']['dps']['avg']>0\""
+chk "sim:cli-smoke"     bash -c "cd '$SIM' && /tmp/wowsimcli sim --infile cmd/wowsimcli/input.json --outfile /tmp/smoke.json && /usr/bin/python3 -c \"import json;r=json.load(open('/tmp/smoke.json'));err=(r.get('error') or {}).get('message') or '';assert not err and r['raidMetrics']['dps']['avg']>0\""
 chk "map:pytest"        bash -c "cd '$MAP' && /usr/bin/python3 -m pytest tests/ -q"
 chk "map:questlog"      bash -c "cd '$MAP' && node --test tests/questlog_schema.test.js"
 chk "map:sha256"        bash -c "cd '$MAP' && node verify_sha256.js"
 chk "map:audit"         bash -c "cd '$MAP' && /usr/bin/python3 audit.py"
 chk "map:http"          curl -sf -o /dev/null "http://127.0.0.1:8731/index.html"
-exit $ok
+for spec in balance_druid feral_druid feral_tank_druid restoration_druid \
+  elemental_shaman enhancement_shaman restoration_shaman warden_shaman \
+  hunter mage rogue holy_paladin protection_paladin retribution_paladin \
+  healing_priest shadow_priest warlock warrior tank_warrior raid detailed_results; do
+  chk "sim:http-$spec" curl -sf -o /dev/null "http://127.0.0.1:8732/forever/${spec}/index.html"
+done
+exit "$ok"
 ```
 (The CLI flag and the JSON assertion were fixed up front in Task 4 — keep them identical here.)
 
@@ -390,17 +403,22 @@ done
 echo $! > "$ROOT/.run/sim.pid"
 /usr/bin/python3 "$ROOT/wow-forever/serve_tiles.py" --host 0.0.0.0 --port 8731 >"$ROOT/.run/map.log" 2>&1 &
 echo $! > "$ROOT/.run/map.pid"
+for i in $(seq 1 10); do
+  ss -ltn 'sport = :8732' | grep -q LISTEN && ss -ltn 'sport = :8731' | grep -q LISTEN && break
+  sleep 0.5
+done
+ss -ltn 'sport = :8732' | grep -q LISTEN && ss -ltn 'sport = :8731' | grep -q LISTEN || { echo "a service failed to bind — see .run/*.log"; exit 1; }
 echo "sim: http://$(hostname -I | awk '{print $1}'):8732/forever/   map: http://$(hostname -I | awk '{print $1}'):8731/"
 ```
 (`serve_tiles.py` defaults to `--host 127.0.0.1` — the `--host 0.0.0.0` above is mandatory for LAN use; without it the printed LAN URL does not work and `verify.sh`'s localhost curls cannot catch it.)
 
-- [ ] **Step 3: `chmod +x launch.sh verify.sh`; ROOT `.gitignore` gets `.run/`; run `./launch.sh`, `./verify.sh` → 11 PASS lines; kill pids; commit `feat(root): launch.sh + verify.sh daily-driver harness`; commit README (map+sim ports, verify usage) `docs(root): README`.**
+- [ ] **Step 3: `chmod +x launch.sh verify.sh`; ROOT `.gitignore` gets `.run/`; run `./launch.sh`, `./verify.sh` → every line PASS (10 base checks + one per spec page) and the script exits 0; kill pids; commit `feat(root): launch.sh + verify.sh daily-driver harness`; commit README (map+sim ports, verify usage) `docs(root): README`.**
 
 ### Task 12: Handoff, push, done-criteria audit
 
 **Files:** Create `HANDOFF-2026-11-06.md` (ROOT); record both gitlinks (`.publish/wow4_sims` and `wow-forever`) if they moved.
 
-- [ ] **Step 1: Run `./verify.sh` with both services up → 11 PASS. Re-run Task 5 browser checklist end to end on the final build; paste results into the handoff.**
+- [ ] **Step 1: Run `./verify.sh` with both services up → all PASS, exit 0. Re-run Task 5 browser checklist end to end on the final build; paste results into the handoff.**
 - [ ] **Step 2: Push everything: SIM repo (`git push`), MAP repo (`git push` — remote exists: `origin https://github.com/bottlefedchaney808/wow-forever.git`), ROOT master (local only — origin/main belongs to the companion project; do NOT push master; note it in the handoff). Record both gitlinks in ROOT so neither goes stale.**
 - [ ] **Step 3: `HANDOFF-2026-11-06.md`: what shipped, verify.sh output, browser checklist, known gaps (1.12-scale values, no talents, Zephras stretch status, scrape decision-gate outcome), how to relaunch.** Commit `docs: daily-driver handoff 2026-11-06`.
 
