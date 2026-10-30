@@ -18,7 +18,7 @@ A personal, LAN-only daily driver: brand-themede WoWSims-derived Forever simulat
 
 ## Architecture
 
-- **Sim** `:8732` — static server over `.publish/wow4_sims/upstream-classic/dist/forever` (bundle + `lib.wasm` with embedded Forever DB + assets), `application/wasm` MIME, LAN bind.
+- **Sim** `:8732` — static server rooted at `dist/` (vite builds with `base: '/forever/'`, so the site lives at `/forever/` and `/` redirects there), `application/wasm` MIME, LAN bind.
 - **Map** `:8731` — existing `wow-forever/serve_tiles.py` (tiles archive + data files).
 - **Launcher** — `launch.sh` at repo root starts both, prints URLs; `verify.sh` runs the full green-check suite. No new frameworks.
 - **Canonical repo** = Tree A `.publish/wow4_sims` (GitHub `bottlefedchaney808/wow4_sims`, pushed `ce1364e`). Tree B (`.worktrees/main/upstream-forever`) is read-only reference; bundle banked at `/home/zinko83/sim-backups/upstream-forever-2026-10-30.bundle`. Nothing gets deleted.
@@ -37,7 +37,7 @@ A personal, LAN-only daily driver: brand-themede WoWSims-derived Forever simulat
 
 ## Map refresh
 
-- New `wow-forever/scrape_worldmap.py` (no scraper exists today): pulls Wowhead Forever `world-map` datasets (config `tree:16`, dv from live config; browser-UA required) → writes `data/places.js|pois.js|nodes.js` in the existing `window.WH_*` formats + new `data/routes.js|voyages.js`.
+- New `wow-forever/scrape/` modules (no scraper exists today): `write_datasets.py` (pure `window.WH_*` writers with a baseline-count guard) and `adapt_captures.py` (endpoint JSON → writer inputs), fed by raw captures pinned in `scrape/ENDPOINTS.md`. Pulls Wowhead Forever `world-map` datasets (config `tree:16`, dv from live config; browser-UA required) → writes `data/places.js|pois.js|nodes.js` in the existing `window.WH_*` formats + new `data/routes.js|voyages.js`.
 - UI: fish/leather/cloth join node toggles; routes/voyages as toggleable polylines; index.html counts updated.
 - Honesty guards mandatory: `version_manifest.py` dataset_version + footer hash, `audit.py` re-based to new counts, all existing tests stay green. A failed/partial scrape never overwrites a shipped dataset (write-to-temp + validate + swap).
 
