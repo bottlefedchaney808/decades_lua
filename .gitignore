@@ -7,3 +7,7 @@
 
 # launch.sh pids + logs
 .run/
+
+# Local agent-run reports + per-machine agent provider config
+.superpowers/
+opencode.json
