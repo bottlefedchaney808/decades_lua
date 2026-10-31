@@ -4,3 +4,6 @@
 # Tooling caches / local agent state
 .pytest_cache/
 .remember/
+
+# launch.sh pids + logs
+.run/
