@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decades Min-Max Suite</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; font: 13px/1.5 ui-sans-serif, system-ui, sans-serif; color: var(--foreground, #e7e7e7); }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  .sub { color: var(--muted-foreground, #8b8b8b); margin-bottom: 12px; font-size: 12px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { border: 1px solid var(--border, #333); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px; color: var(--muted-foreground, #8b8b8b); background: transparent; }
+  .chip.on { color: var(--accent, #e0b055); border-color: var(--accent, #e0b055); font-weight: 600; }
+  .cols { display: grid; grid-template-columns: minmax(300px, 5fr) minmax(260px, 4fr); gap: 12px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--border, #333); border-radius: 10px; padding: 12px 14px; background: var(--card, #171717); }
+  .panel h2 { margin: 0 0 8px; font-size: 13px; }
+  .four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+  .kpi { border: 1px solid var(--border, #333); border-radius: 8px; padding: 8px 6px; text-align: center; }
+  .kpi b { display: block; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 10.5px; color: var(--muted-foreground, #8b8b8b); }
+  .kpi .hi { color: var(--accent, #e0b055); }
+  .kpi .lo { color: #d47f7f; }
+  .gaps { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  .gap { border-radius: 8px; padding: 7px 9px; border: 1px solid var(--border, #333); }
+  .gap b { font-size: 12px; } .gap span { font-size: 10.5px; color: var(--muted-foreground, #8b8b8b); display: block; }
+  .setup { border-color: #58c47a55; } .exec { border-color: #e0b05555; }
+  .setup b { color: #58c7a5; } .exec b { color: var(--accent, #e0b055); }
+  ol { margin: 0; padding-left: 18px; }
+  li { margin: 7px 0; }
+  .gain { color: #58c7a5; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .why { color: var(--muted-foreground, #8b8b8b); font-size: 11.5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--border, #2b2b2b); }
+  th { color: var(--muted-foreground, #8b8b8b); font-weight: 600; font-size: 11px; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { height: 4px; background: var(--border, #333); border-radius: 2px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent, #e0b055); }
+  footer { margin-top: 12px; color: var(--muted-foreground, #8b8b8b); font-size: 11px; }
+</style>
+</head>
+<body>
+<h1>Decades Min-Max Suite — Sim × WCL × You</h1>
+<div class="sub">illustrative numbers · the app every raid report lives in · one page per player per boss</div>
+
+<div class="chips" id="chips"></div>
+<div class="cols">
+  <div class="panel" id="critique"></div>
+  <div class="panel" id="side"></div>
+</div>
+<footer id="foot"></footer>
+
+<script>
+(function () {
+  "use strict";
+  // Illustrative sample data — the shape the suite will stream from Firestore + sim engines.
+  var PLAYERS = [
+    { name: "Grukk", spec: "Fury Warrior", boss: "Ragnaros", wcl: 78,
+      actual: 612, expected: 701, ceiling: 744, bis: 866,
+      fixes: [
+        { kind: "Execution", what: "Bloodthirst on cooldown 81% of fight (sim 97%)", gain: 38, tag: "timeline" },
+        { kind: "Gear", what: "Next: Cloudkeeper's Leggings — loot priority #3", gain: 31, tag: "loot" },
+        { kind: "Setup", what: "No Elixir of the Mongoose", gain: 24, tag: "go there" },
+        { kind: "Execution", what: "14 s idle GCD in phase 2", gain: 19, tag: "timeline" }
+      ] },
+    { name: "Ulu", spec: "Enhancement Shaman", boss: "Ragnaros", wcl: 94,
+      actual: 598, expected: 604, ceiling: 631, bis: 702,
+      fixes: [
+        { kind: "Setup", what: "Missing Winterfall firewater", gain: 11, tag: "go there" },
+        { kind: "Gear", what: "Enchant: +1 hit gloves → +7 str", gain: 8, tag: "crafter: Leer" }
+      ] },
+    { name: "Daytime", spec: "Holy Priest", boss: "Ragnaros", wcl: 88,
+      actual: 0, expected: 0, ceiling: 0, bis: 0, healer: true, hps: 812, overheal: 31,
+      fixes: [
+        { kind: "Healing", what: "Flash Heal avg cast 1.9 s (sim 1.5 s) — 0.4 s per cast lost", gain: 0, tag: "timeline" },
+        { kind: "Setup", what: "Mageblood elixir missing", gain: 0, tag: "go there" }
+      ] }
+  ];
+  var RIVALRIES = [
+    { a: "Tyler", b: "some poor soul", kills: 50, note: "about to make it 51" },
+    { a: "Night", b: "Rock", kills: 12, note: "economy grudge" }
+  ];
+  var SIGHTINGS = [
+    { who: "Spiderfang", seen: 312, zone: "STV", last: "2d ago" },
+    { who: "Rare devilsaur", seen: 47, zone: "Un'Goro", last: "6h ago" }
+  ];
+
+  var chips = ["critique", "rivalries", "sightings"];
+  var active = "critique";
+  var sel = 0;
+  var chipsEl = document.getElementById("chips");
+  var mainEl = document.getElementById("critique");
+  var sideEl = document.getElementById("side");
+
+  function renderChips() {
+    chipsEl.innerHTML = "";
+    chips.forEach(function (name) {
+      var b = document.createElement("button");
+      b.className = "chip" + (active === name ? " on" : "");
+      b.textContent = name;
+      b.addEventListener("click", function () { active = name; render(); });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  function renderCritique() {
+    mainEl.innerHTML = "<h2>Critique — ranked by measured gain</h2>";
+    PLAYERS.forEach(function (p, idx) {
+      var d = document.createElement("div");
+      d.style.cssText = "border-top:1px solid var(--border,#2b2b2b);padding:10px 0;cursor:pointer;" + (idx === sel ? "" : "opacity:.75;");
+      var head = "<b style='font-size:13px'>" + p.name + "</b> <span class='why'>" + p.spec + " · " + p.boss + " · WCL " + p.wcl + "</span>";
+      var numbers;
+      if (p.healer) {
+        numbers = "<div class='gaps'><div class='gap exec'><b>" + p.hps + " HPS</b><span>actual (WCL)</span></div>" +
+          "<div class='gap setup'><b>" + p.overheal + "% overheal</b><span>vs sim mix</span></div></div>";
+      } else {
+        var setup = p.ceiling - p.expected, exec = p.expected - p.actual, gear = p.bis - p.ceiling;
+        numbers =
+          "<div class='four'>" +
+          "<div class='kpi'><b class='lo'>" + p.actual + "</b><span>actual</span></div>" +
+          "<div class='kpi'><b>" + p.expected + "</b><span>expected</span></div>" +
+          "<div class='kpi'><b>" + p.ceiling + "</b><span>ceiling</span></div>" +
+          "<div class='kpi'><b class='hi'>" + p.bis + "</b><span>BiS</span></div></div>" +
+          "<div class='gaps'><div class='gap setup'><b>+" + setup + " DPS</b><span>setup loss — fix before next raid</span></div>" +
+          "<div class='gap exec'><b>+" + exec + " DPS</b><span>execution loss — practice</span></div></div>";
+      }
+      var fixes = "<ol>" + p.fixes.map(function (f) {
+        return "<li><span class='gain'>+" + (f.gain || "—") + "</span> " + f.kind + " — " + f.what + " <span class='why'>[" + f.tag + "]</span></li>";
+      }).join("") + "</ol>";
+      if (idx === sel) d.innerHTML = head + numbers + fixes;
+      else d.innerHTML = head + "<div class='why'>" + p.fixes.length + " fixes · tap to expand</div>";
+      d.addEventListener("click", function () { sel = idx; render(); });
+      mainEl.appendChild(d);
+    });
+  }
+
+  function renderSide() {
+    if (active === "rivalries") {
+      sideEl.innerHTML = "<h2>Rivalries</h2><table><tr><th>killer</th><th>victim</th><th class='n'>kills</th><th></th></tr>" +
+        RIVALRIES.map(function (r) {
+          return "<tr><td>" + r.a + "</td><td>" + r.b + "</td><td class='n'>" + r.kills + "</td><td class='why'>" + r.note + "</td></tr>";
+        }).join("") + "</table>";
+    } else if (active === "sightings") {
+      sideEl.innerHTML = "<h2>Sightings — guild-wide</h2><table><tr><th>who</th><th class='n'>seen</th><th>zone</th><th>last</th></tr>" +
+        SIGHTINGS.map(function (s) {
+          return "<tr><td>" + s.who + "</td><td class='n'>" + s.seen + "×</td><td>" + s.zone + "</td><td class='why'>" + s.last + "</td></tr>";
+        }).join("") + "</table>" +
+        "<div style='margin-top:8px' class='bar'><i style='width:64%'></i></div><div class='why'>rare-coverage this week</div>";
+    } else {
+      var p = PLAYERS[sel];
+      sideEl.innerHTML = "<h2>Mentor overlay</h2>" +
+        "<div class='why'>Your cast timeline vs the guild's top " + p.spec + " on " + p.boss + ":</div>" +
+        "<table><tr><th>ability</th><th class='n'>you</th><th class='n'>top</th></tr>" +
+        "<tr><td>Bloodthirst</td><td class='n'>81%</td><td class='n'>97%</td></tr>" +
+        "<tr><td>Heroic Strike uptime</td><td class='n'>62%</td><td class='n'>71%</td></tr>" +
+        "<tr><td>CDs on pull</td><td class='n'>2/3</td><td class='n'>3/3</td></tr></table>" +
+        "<div style='margin-top:10px' class='why'>Provenance — sim: forever_sim [F] Forever client · WoW4_SiMs timeline · WCL: region rankings. Every number carries its source.</div>";
+    }
+  }
+
+  function render() { renderChips(); renderCritique(); renderSide(); }
+  render();
+  document.getElementById("foot").textContent =
+    "Illustrative data for presentation — the live board streams the same shapes from Firestore, forever_sim, WoW4_SiMs and WCL.";
+})();
+</script>
+</body>
+</html>
